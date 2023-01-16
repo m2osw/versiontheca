@@ -1,0 +1,9 @@
+Document: versiontheca
+Title: versiontheca manual
+Author: Alexis Wilke
+Abstract: This is the reference manual for the versiontheca library & tool.
+Section: web
+
+Format: HTML
+Index: /usr/share/doc/versiontheca/html/index.html
+Files: /usr/share/doc/versiontheca/html/*

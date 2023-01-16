@@ -1,0 +1,45 @@
+Source: versiontheca
+Priority: extra
+Maintainer: Alexis Wilke <alexis@m2osw.com>
+Build-Depends: cmake,
+    debhelper,
+    doxygen,
+    graphviz,
+    snapcmakemodules (>= 1.0.69.0~bionic),
+    snapdev (>= 1.1.33.0~bionic)
+Standards-Version: 3.9.4
+Section: libs
+Homepage: https://snapwebsites.org/
+Vcs-Git: https://github.com/m2osw/versiontheca.git
+Vcs-Browser: https://github.com/m2osw/versiontheca
+
+Package: versiontheca-dev
+Section: utils
+Architecture: any
+Depends: versiontheca (= ${binary:Version}), ${misc:Depends}
+Recommends: versiontheca-doc (= ${binary:Version})
+Description: C++ library & tool to handle any type of version string.
+ This package parses version strings and gives you the dissecated elements.
+ .
+ This is the development package complete with C++ headers.
+
+Package: versiontheca-doc
+Section: doc
+Architecture: all
+Depends: ${misc:Depends}
+Recommends: versiontheca (= ${binary:Version})
+Description: C++ library & tool to handle any type of version string.
+ This package parses version strings and gives you the dissecated elements.
+ .
+ This is the documentation package about the library and tool.
+
+Package: versiontheca
+Section: web
+Architecture: any
+Suggests: versiontheca-doc (= ${binary:Version})
+Description: C++ library & tool to handle any type of version string.
+ This package parses version strings and gives you the dissecated elements.
+ .
+ This is the package with the compiled library and tool.
+
+# vim: ts=4 sw=4 et

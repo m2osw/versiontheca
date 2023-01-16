@@ -1,0 +1,237 @@
+.TH VERSIONTHECA 1 "January 2023" "versiontheca 1.x" "User Commands"
+.SH NAME
+versiontheca \- Canonicalize, verify, or compare versions against each other
+.SH SYNOPSIS
+.B versiontheca
+[\fIOPTIONS\fR]
+.SH "DESCRIPTION"
+This tool reads one or more versions from its argument list and
+canonicalizes, validates or compares them together.
+
+Each of the sections below describe the various modes available.
+At the end, the list of command line options is clearly defined.
+
+.SH "CANONICALIZATION"
+When used with the \fI\-\-canonicalize\fR command line option, the
+tool reads all the versions specified on the command line and prints
+one per line in stdout in their canonicalized format.
+
+    versiontheca --canonicalize <version> ...
+
+In general, this means zeroes are removed. For example, a version such
+as "1.2.0.0" is canonicalized as "1.2".
+
+.SH "VALIDATION"
+The verification mode is entered using the \fI\-\-validate\fR command
+line option. In this mode the tool accepts any number of versions on
+the command line. It checks each one of those versions and returns
+true if all of them are considered valid and false otherwise.
+
+    versiontheca --validate <version> ...
+
+.SH "COMPARISON"
+When comparing two versions against each other, enter two versions
+separated by one of the supported comparison operators. The function
+then returns true if the expression is true and false otherwise.
+
+    versiontheca [--compare] <version1> <operator> <version2>
+
+The \fI\-\-compare\fR mode is the default, so it is optional.
+
+By default, all the parts of each version is checked. Missing parts
+on one side make use of "zero" from the other side. In other
+words, comparing "1.5.2" against "1.5" is the same as comparing
+"1.5.2" against "1.5.0".
+
+The supported operators are:
+
+\fBWARNING:\fR the '!', '<' and '>' characters have a meaning in most
+shells (copy previous command at that location, redirect input, redirect
+output). Make sure to properly quote these characters if you want to use
+them in your console.
+
+.TP
+\fB== | eq\fR
+Check whether two versions are equal. Keep in mind that zeroes are optional
+so a version such as "1.2" is equal to version "1.2.0". The tool first
+canonicalize the versions and then compares them.
+
+.TP
+\fB!= | ne\fR
+Check whether two versions are not equal. Keep in mind that zeroes are
+optional so a version such as "1.2" is equal to version "1.2.0". The tool
+first canonicalize the versions and then compares them.
+
+.TP
+\fB< | lt\fR
+Check whether the first version is less than (lt) the second version.
+If so, then the tool returns true (0). Otherwise, it returns false (1).
+
+.TP
+\fB<= | le\fR
+Check whether the first version is less than or equal (le) the second
+version. If so, then the tool returns true (0). Otherwise, it returns
+false (1).
+
+.TP
+\fB> | gt\fR
+Check whether the first version is greater than (gt) the second
+version. If so, then the tool returns true (0). Otherwise, it returns
+false (1).
+
+.TP
+\fB>= | ge\fR
+Check whether the first version is greater than or equal (ge) the second
+version. If so, then the tool returns true (0). Otherwise, it returns
+false (1).
+
+.SH "NEXT VERSION"
+
+You can ask the tool to compute the next version at a specific level. This
+is done with:
+
+    ... --next <level> ...
+
+The level represents the part number being updated. It has to be between
+1 and 25. For example, to increment the build version number, you would
+use a level of four:
+
+    $ versiontheca -n 4 3.22.5
+    3.22.5.1
+
+To increment the patch number, use 3 as the level. Note that any level beyond
+the one being incremented is reset to zero and likely not going to show up
+in the output:
+
+    $ versiontheca -n 3 3.22.5.9
+    3.22.6
+
+See also the \fB\-\-format\fR command line option to define the maximums for
+each version number.
+
+.SH "PREVIOUS VERSION"
+
+You can ask the tool to computer the previous version at a specified level.
+This is done with:
+
+    ... --previous <level> ...
+
+The level represents the part number being updated. It has to be between
+1 and 25. For example, to decrement the build version number, you would
+use a level of four:
+
+    $ versiontheca -p 4 3.22.5.17
+    3.22.5.16
+
+To decrement the patch number, use 3 as the level. Note that any level beyond
+the one being decremented is reset to zero and likely not going to show up
+in the output:
+
+    $ versiontheca -p 3 3.22.5.9
+    3.22.4
+
+See also the \fB\-\-format\fR command line option to define the maximums for
+each version number (in case it is zero to start with).
+
+.SH "COMMAND LINE OPTIONS"
+
+.HP
+\fINote:\fR the \fB\-\-canonicalize\fR, \fB\-\-validate\fR,
+\fB\-\-compare\fR, \fB\-\-next\fR, and \fB\-\-previous\fR,
+command line options are mutually exclusive.
+
+.TP
+\fB-C, \-\-canonicalize\fR
+Canonicalize each version found on the command line. If one of the
+versions is invalid, the tool returns false (1).
+
+.TP
+\fB\-c, \-\-compare\fR
+Compare two versions against each other.
+
+.TP
+\fB\-f, \-\-format\fR \fIFORMAT\fR
+The format is a version with each part set to its maximum. For example,
+say we want a maximum major version of 255, a maximum of 65535, and the
+two others a maximum of 999999, then we can write:
+
+    255.65535.999999.999999
+
+This means the \fB\-\-next\fR command will add one to the specified LEVEL
+unless that number matches the maximum specified in the format. If so, then
+that level part becomes 0 and the previous level (LEVEL - 1) is set to the
+maximum.
+
+.TP
+\fB\-h, \-\-help\fR
+Output help information in your console.
+
+.TP
+\fB\-l, \-\-limit\fR \fIN\fR
+Define how many of the parts need to be tested. Use this option along
+the \-\-compare option. Ignored otherwise.
+
+.TP
+\fB\-n, \-\-next\fR \fILEVEL\fR
+Compute the next version starting at \fILEVEL\fR. The level parameter must be
+a valid decimal number between 1 and 25 inclusive. Any numbers after that one
+are reset to zero (and likely not displayed in the resulting output).
+
+.TP
+\fB\-p, \-\-previous\fR \fILEVEL\fR
+Compute the previous version starting at \fILEVEL\fR. The level parameter must
+be a valid decimal number between 1 and 25 inclusive. Any numbers after that
+one are reset to zero (and likely not displayed in the resulting output).
+
+.TP
+\fB\-V, \-\-validate\fR
+Check all the versions found on the command line. Return true if all the
+versions specified on the command line are valid. This is similar to
+using the \-\-canonicalize option without the output.
+
+.TP
+\fB\-V, \-\-version\fR
+Print out the version of the tool and exit.
+
+.SH "EXIT STATUS"
+The command exits with one of the following values:
+
+.TP
+0
+The tool worked as expected. All versions were considered valid.
+
+.TP
+1
+The tool found one or more invalid version.
+
+.TP
+2
+The tool bumped in an error other than an invalid version. For example,
+when comparing two versions, you need exactly two versions separated by
+an operator. If the parameters are not defined like so (i.e. there are
+two version, but no operator; etc.)
+
+.TP
+3
+A command worked as expected, but it was not used to handle versions.
+For example, the \fB\-\-version\fR and \fB\-\-help\fR command line
+options make versiontheca exit with code 3.
+
+.SH AUTHOR
+Written by Alexis Wilke <alexis@m2osw.com>.
+
+Part of this code comes from the wpkg project although it was heavily
+rewritten to be 100% in modern C++.
+
+.SH "REPORTING BUGS"
+Report bugs to <https://github.com/m2osw/versiontheca/issues>.
+.br
+versiontheca home page: <https://snapwebsites.org/project/versiontheca>.
+.SH COPYRIGHT
+Copyright \(co 2023 Made to Order Software Corporation
+.br
+License: GPLv3
+.br
+This is free software: you are free to change and redistribute it.
+.br
+There is NO WARRANTY, to the extent permitted by law.
