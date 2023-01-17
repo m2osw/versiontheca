@@ -5,6 +5,7 @@ Build-Depends: cmake,
     debhelper,
     doxygen,
     graphviz,
+    libutf8-dev (>= 1.0.15.0~bionic),
     snapcmakemodules (>= 1.0.69.0~bionic),
     snapdev (>= 1.1.33.0~bionic)
 Standards-Version: 3.9.4
