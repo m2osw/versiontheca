@@ -56,7 +56,10 @@ versiontheca::versiontheca(
         , std::string const & v)
     : f_trait(t == nullptr ? std::make_shared<basic>() : t)
 {
-    set_version(v);
+    if(!v.empty())
+    {
+        set_version(v);
+    }
 }
 
 

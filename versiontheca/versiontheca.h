@@ -41,7 +41,16 @@ public:
 
                         versiontheca(
                                   trait::pointer_t const & t
-                                , std::string const & v);
+                                , std::string const & v = std::string());
+
+                        // note: because of the trait pointer requirement
+                        // copy is not possible without a clone() function
+                        // instead, you can use:
+                        //
+                        //   versiontheca copy(<your trait>, rhs.get_version());
+                        //
+                        versiontheca(versiontheca const &) = delete;
+    versiontheca &      operator = (versiontheca const &) = delete;
 
     void                set_format(versiontheca const & format);
     void                set_version(std::string const & v);
@@ -70,6 +79,12 @@ private:
     bool                f_valid = false;
     trait::pointer_t    f_format = trait::pointer_t();
 };
+
+
+inline std::ostream & operator << (std::ostream & os, versiontheca const & v)
+{
+    return os << v.get_version();
+}
 
 
 

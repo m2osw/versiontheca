@@ -74,6 +74,7 @@ public:
     std::string         get_last_error(bool clear = true) const;
 
 protected:
+    bool                parse_version(std::string const & v, char32_t sep);
     bool                parse_value(std::string const & value, char32_t sep);
     part                get_format_part(pointer_t format, int pos, bool integer);
 

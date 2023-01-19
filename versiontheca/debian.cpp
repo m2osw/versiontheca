@@ -68,170 +68,107 @@ namespace versiontheca
 
 
 
+/** \brief Parse a debian version string.
+ *
+ * A debian version string is composed of three parts:
+ *
+ * * Epoch -- a number followed by a colon (:)
+ * * Upstream Version -- numbers, letters, and . + - : ~
+ * * Debian-revision -- additional parts after the last hyphen
+ *
+ * The upstream version may include : only if the version includes an
+ * epoch. Similarly, it can include a dash if there is a Debian revision.
+ * To parse the version we first search the first colon (:) and parse
+ * anything before that as the epoch. Then we search the last dash (-)
+ * and parse that as the Debian revision. In between, the parse the
+ * rest as a standard version string that can include those two special
+ * characters.
+ *
+ * \param[in] v  The version to parse.
+ *
+ * \return true if the parser succeeded.
+ */
 bool debian::parse(std::string const & v)
 {
-std::cerr << "--- do we have a problem here?! debian::parse() called!!!\n";
-    char32_t sep(U'\0');
-    libutf8::utf8_iterator it(v);
-    char32_t c(U'\0');
-    std::string epoch;
-    for(;; ++it)
+    std::string::size_type colon(v.find(':'));
+    std::string::size_type dash(v.rfind('-'));
+    if((colon != std::string::npos && dash != std::string::npos && colon >= dash)
+    || colon == 0ULL
+    || dash == 0ULL)
     {
-        c = *it;
-        if(c < U'0' || c > U'9')
-        {
-            break;
-        }
-        epoch += c;
-    }
-    if(c == ':')
-    {
-        // we've got an epoch
+        // if there is a ':' then there has to be an epoch and a dash
+        // cannot appear in the epoch
         //
+        f_last_error =
+              "invalid ':' and/or '-' positions in \""
+            + v
+            + "\".";
+        return false;
+    }
+
+    // if there is a colon we must have an epoch (there may be more colons
+    // later in the version in which case "0:..." is required in that case)
+    //
+    if(colon != std::string::npos)
+    {
         part p;
-        if(!p.set_value(epoch))
+        f_accepted_chars = accepted_chars_t::ACCEPTED_CHARS_EPOCH;
+        if(!p.set_value(v.substr(0, colon)))
         {
             f_last_error = p.get_last_error();
             return false;
         }
+        if(!p.is_integer())
+        {
+            f_last_error = "epoch must be a valid integer.";
+            return false;
+        }
         p.set_type(':');
         push_back(p);
-
-        // skip the ':'
-        //
-        ++it;
-        sep = ':';
     }
-    else
+    ++colon;
+
+    if(dash == std::string::npos)
     {
-        // no epoch, restore anything we've parsed so far
-        //
-        it.rewind();
-        c = *it;
+        dash = v.length();
     }
 
-    std::string value;
-    for(;; ++it)
+    // the upstream can be parsed as is with parts separated by periods
+    //
+    std::string const upstream_version(v.substr(colon, dash - colon));
+    f_accepted_chars = accepted_chars_t::ACCEPTED_CHARS_UPSTREAM;
+    if(!trait::parse_version(upstream_version, colon == 0 ? U'\0' : U':'))
     {
-        c = *it;
-        if(c == libutf8::EOS || c == U'-' || c == U'~' || c == U'.')
-        {
-            if(value.empty())
-            {
-                // this happens if you have two periods one after the other
-                //
-                f_last_error =
-                      "found an empty part in \""
-                    + v
-                    + "\".";
-                return false;
-            }
-
-            if(!parse_value(value, sep))
-            {
-                return false;
-            }
-            value.clear();
-
-            if(c != U'.')
-            {
-                break;
-            }
-
-            sep = U'.';
-        }
-        else
-        {
-            value += libutf8::to_u8string(c);
-        }
+        return false;
     }
 
-    if(c == U'-')
-    {
-        for(++it;; ++it)
-        {
-            c = *it;
-            if(c == libutf8::EOS || c == U'~')
-            {
-                break;
-            }
-            value += libutf8::to_u8string(c);
-        }
-        if(value.empty())
-        {
-            // this happens if you have two periods one after the other
-            //
-            f_last_error =
-                  "found an empty part near '-' in \""
-                + v
-                + "\".";
-            return false;
-        }
-        std::size_t pos(size());
-        if(!parse_value(value, U'-'))
-        {
-            return false;
-        }
-        for(; pos < size(); ++pos)
-        {
-            at(pos).set_type('-'); // revision
-        }
-        value.clear();
-    }
-
-    if(c == U'~')
-    {
-        bool is_integer(true);
-        for(++it;; ++it)
-        {
-            c = *it;
-            if(c == libutf8::EOS)
-            {
-                break;
-            }
-            if(c < '0' || c > '9')
-            {
-                is_integer = false;
-            }
-            value += libutf8::to_u8string(c);
-        }
-        if(value.empty())
-        {
-            // this happens if you have two periods one after the other
-            //
-            f_last_error =
-                  "found an empty part near '-' in \""
-                + v
-                + "\".";
-            return false;
-        }
-
-        // TBD: we may still need to call parse_value() here?
-        //
-        part p;
-        if(is_integer)
-        {
-            // set_value() will convert the integer to a number and
-            // verify overflows
-            //
-            p.set_value(value);
-        }
-        else
-        {
-            p.set_string(value);
-        }
-        p.set_type('~');
-        p.set_separator(U'~');
-        push_back(p);
-    }
-
-    if(c != libutf8::EOS)
+    if(!at(colon == 0 ? 0 : 1).is_integer())
     {
         f_last_error =
-              "found unexpected characters in \""
+              "a debian version must always start with a number \""
             + v
             + "\".";
         return false;
+    }
+
+    if(dash < v.length())
+    {
+        // parse the debian revision
+        //
+        std::size_t idx(size());
+        f_accepted_chars = accepted_chars_t::ACCEPTED_CHARS_DEBIAN_REVISION;
+        if(!trait::parse_value(v.substr(dash + 1), U'-'))
+        {
+            return false;
+        }
+
+        // mark all of these as revision info
+        //
+        std::size_t const max(size());
+        for(; idx < max; ++idx)
+        {
+            at(idx).set_type('-');
+        }
     }
 
     return true;
@@ -240,12 +177,45 @@ std::cerr << "--- do we have a problem here?! debian::parse() called!!!\n";
 
 bool debian::is_valid_character(char32_t c) const
 {
-    // in debian the acceptable characters are very limited
-    //
-    return (c >= U'0' && c <= U'9')
-        || (c >= U'a' && c <= U'z')
-        || c == U'+'
-        || c == U'.';       // release and revision support periods within their strings
+    if(c >= U'0' && c <= U'9')
+    {
+        // this is not hit because:
+        //
+        // 1. epoch: we directly call the part::set_value()
+        //    which doesn't use this callback, instead we check whether
+        //    the resulting part is an INTEGER
+        //
+        // 2. others: we call this function only for characters other
+        //    than digits (since we know digits are fine)
+        //
+        return true; // LCOV_EXCL_LINE
+    }
+
+    if(f_accepted_chars == accepted_chars_t::ACCEPTED_CHARS_EPOCH)
+    {
+        // this is not hit since this function is never called when the
+        // accepted characters are for the epoch (as mentioned above,
+        // we directly call the part::set_value())
+        //
+        return false; // LCOV_EXCL_LINE
+    }
+
+    if((c >= U'A' && c <= U'Z')
+    || (c >= U'a' && c <= U'z')
+    || c == U'+'
+    || c == U'.'
+    || c == U'~')
+    {
+        return true;
+    }
+
+    if(f_accepted_chars == accepted_chars_t::ACCEPTED_CHARS_DEBIAN_REVISION)
+    {
+        return false;
+    }
+
+    return c == U'-'
+        || c == U':';
 }
 
 
@@ -262,12 +232,11 @@ bool debian::prepare_next_previous(std::size_t & start, std::size_t & end)
     end = size();
     for(std::size_t idx(0); idx < size(); ++idx)
     {
-        if(at(idx).get_type() == ':')
+        if(at(idx).get_type() == ':' && start == 0)
         {
             start = idx + 1;
         }
-        else if(at(idx).get_type() == '-'
-             || at(idx).get_type() == '~')
+        else if(at(idx).get_type() == '-' && end > idx)
         {
             end = idx;
             break;
@@ -301,46 +270,40 @@ bool debian::next(int pos, trait::pointer_t format)
     std::size_t start(0ULL);
     std::size_t end(0ULL);
 
-std::cerr << "--- we've go in debian next() " << size() << "!\n";
     if(!prepare_next_previous(start, end))
     {
-std::cerr << "--- previous/end fails?\n";
         return false;
     }
 
-std::cerr << "--- try some zero insert\n";
-    part zero;
-    zero.set_separator(U'.');
-    while(end <= static_cast<std::size_t>(pos))
+    if(end <= static_cast<std::size_t>(pos))
     {
-        insert(end, zero);
-        ++end;
+        part zero;
+        zero.set_separator(U'.');
+        do
+        {
+            insert(end, zero);
+            ++end;
+        }
+        while(end <= static_cast<std::size_t>(pos));
     }
-std::cerr << "--- added some entries? " << pos << " < " << size() << "\n";
     for(;; --pos)
     {
-std::cerr << "--- ready...\n";
-std::cerr << "--- at(pos) -> " << at(pos).is_integer() << "...\n";
         if(at(pos) == get_format_part(format, pos, at(pos).is_integer()))
         {
             if(static_cast<std::size_t>(pos) <= start)
             {
-std::cerr << "--- max. reached?! " << size() << "!\n";
                 f_last_error = "maximum limit reached; cannot increment version any further.";
                 return false;
             }
             erase(pos);
-            // "recursive"
         }
         else
         {
-std::cerr << "--- do ++ but is that const?! " << at(pos).to_string() << "!\n";
             at(pos).next();
             break;
         }
     }
 
-std::cerr << "--- finsihing up\n";
     // keep part one if it is an integer and the last incremented part
     // was part 0
     //
@@ -379,28 +342,23 @@ bool debian::previous(int pos, trait::pointer_t format)
         return false;
     }
 
+    if(end <= static_cast<std::size_t>(pos))
+    {
+        part zero;
+        zero.set_integer(0U);
+        zero.set_separator(U'.');
+        do
+        {
+            insert(end, zero);
+            ++end;
+        }
+        while(end <= static_cast<std::size_t>(pos));
+    }
+
     bool result(false);
     for(;;)
     {
-        while(static_cast<std::size_t>(pos) > end)
-        {
-            part zero;
-            zero.set_integer(0U);
-            zero.set_separator(U'.');
-            insert(end, zero);
-        }
-        if(static_cast<std::size_t>(pos) == size())
-        {
-            result = true;
-std::cerr << "--- got format? "
-<< std::boolalpha << (format != nullptr) << " -> "
-<< (format == nullptr ? std::string("<null>") : format->to_string()) << "\n";
-            part p(get_format_part(format, pos, true));
-            p.set_separator(U'.');
-            push_back(p);
-            --pos;
-        }
-        else if(at(pos).is_zero())
+        if(at(pos).is_zero())
         {
             if(pos == 0)
             {
@@ -460,7 +418,7 @@ std::string debian::to_string() const
 #ifdef _DEBUG
             if(idx == 0)
             {
-                throw logic_error("the very first part should not have a separator defined (it is not supported).");
+                throw logic_error("the very first part should not have a separator defined (it is not supported)."); // LCOV_EXCL_LINE
             }
 #endif
             result += sep;

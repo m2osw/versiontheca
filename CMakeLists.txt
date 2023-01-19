@@ -22,6 +22,7 @@ project(versiontheca_project)
 
 find_package(LibExcept        REQUIRED)
 find_package(LibUtf8          REQUIRED)
+find_package(SnapDev          REQUIRED)
 find_package(SnapCMakeModules REQUIRED)
 
 SnapGetVersion(VERSIONTHECA ${CMAKE_CURRENT_SOURCE_DIR})

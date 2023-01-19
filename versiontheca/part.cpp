@@ -148,7 +148,7 @@ bool part::set_value(std::string const & value)
                 // note: if you want to accept really large numbers as strings
                 //       then make sure to use the set_string_value() instead
                 //
-                f_last_error = "integer too large for a valid version";
+                f_last_error = "integer too large for a valid version.";
                 return false;
             }
         }

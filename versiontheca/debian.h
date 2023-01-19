@@ -51,7 +51,16 @@ public:
     virtual std::string to_string() const override;
 
 private:
+    enum class accepted_chars_t
+    {
+        ACCEPTED_CHARS_EPOCH,
+        ACCEPTED_CHARS_UPSTREAM,
+        ACCEPTED_CHARS_DEBIAN_REVISION,
+    };
+
     bool                prepare_next_previous(std::size_t & start, std::size_t & end);
+
+    accepted_chars_t    f_accepted_chars = accepted_chars_t::ACCEPTED_CHARS_EPOCH;
 };
 
 

@@ -55,7 +55,6 @@ namespace versiontheca
 
 
 
-
 trait::~trait()
 {
 }
@@ -95,6 +94,7 @@ void trait::push_back(part const & p)
 {
     if(f_parts.size() >= MAX_PARTS)
     {
+std::cerr << "version so far: [" << to_string() << "]\n";
         throw overflow("trying to append more parts when maximum was already reached.");
     }
 
@@ -194,25 +194,24 @@ void trait::resize(std::size_t sz)
  */
 bool trait::parse(std::string const & v)
 {
-std::cerr << "--- trait::parse() ...\n";
     clear();
     if(v.empty())
     {
         f_last_error = "an empty input string cannot represent a valid version.";
         return false;
     }
+
+    return parse_version(v, U'\0');
+}
+
+
+bool trait::parse_version(std::string const & v, char32_t sep)
+{
     std::list<std::string> numbers;
     snapdev::tokenize_string(numbers, v, { "." });
-    char32_t sep(U'\0');
+  
     for(auto const & n : numbers)
     {
-        if(n.empty())
-        {
-            // two period one after the other is not valid ("1..3")
-            //
-            f_last_error = "two periods found one after the other.";
-            return false;
-        }
         if(!parse_value(n, sep))
         {
             return false;
@@ -233,6 +232,15 @@ std::cerr << "--- trait::parse() ...\n";
 
 bool trait::parse_value(std::string const & value, char32_t sep)
 {
+    if(value.empty())
+    {
+        // this happens in cases such as two periods one after the
+        // other ("1..3"); with a debian version, it happens when
+        // you pass a string without an upstream version ("3:-ubuntu3")
+        //
+        f_last_error = "a version value cannot be an empty string.";
+        return false;
+    }
     libutf8::utf8_iterator it(value);
     char32_t c(*it);
     while(c != libutf8::EOS)
