@@ -25,6 +25,7 @@
 // versiontheca
 //
 #include    "versiontheca/debian.h"
+#include    "versiontheca/exception.h"
 #include    "versiontheca/versiontheca.h"
 
 
@@ -39,6 +40,18 @@
 
 namespace
 {
+
+
+
+versiontheca::versiontheca::pointer_t create(char const * version)
+{
+    versiontheca::debian::pointer_t t(std::make_shared<versiontheca::debian>());
+    versiontheca::versiontheca::pointer_t v(std::make_shared<versiontheca::versiontheca>(t, version));
+    CATCH_REQUIRE(v->get_version() == version);
+    return v;
+}
+
+
 
 std::string print_version(std::string const & version)
 {
@@ -265,14 +278,6 @@ CATCH_TEST_CASE("next_previous_debian_versions", "[valid]")
 {
     CATCH_START_SECTION("next_previous_debian_versions: next/previous at level 4, 3, 2, 1, 0")
     {
-        auto create = [](char const * version)
-        {
-            versiontheca::debian::pointer_t t(std::make_shared<versiontheca::debian>());
-            versiontheca::versiontheca::pointer_t v(std::make_shared<versiontheca::versiontheca>(t, version));
-            CATCH_REQUIRE(v->get_version() == version);
-            return v;
-        };
-
         {
             versiontheca::versiontheca::pointer_t a(create("1.3.2"));
             CATCH_REQUIRE(a->next(4));
@@ -281,6 +286,8 @@ CATCH_TEST_CASE("next_previous_debian_versions", "[valid]")
             CATCH_REQUIRE(a->get_version() == "1.3.2"); // +1 -1, back to original
             CATCH_REQUIRE(a->previous(4));
             CATCH_REQUIRE(a->get_version() == "1.3.1.4294967295.4294967295");
+            CATCH_REQUIRE(a->next(4));
+            CATCH_REQUIRE(a->get_version() == "1.3.2"); // +1 -1 -1 +1, back to original
         }
 
         {
@@ -291,6 +298,8 @@ CATCH_TEST_CASE("next_previous_debian_versions", "[valid]")
             CATCH_REQUIRE(a->get_version() == "1.3.2");
             CATCH_REQUIRE(a->previous(3));
             CATCH_REQUIRE(a->get_version() == "1.3.1.4294967295");
+            CATCH_REQUIRE(a->next(3));
+            CATCH_REQUIRE(a->get_version() == "1.3.2");
         }
 
         {
@@ -301,6 +310,8 @@ CATCH_TEST_CASE("next_previous_debian_versions", "[valid]")
             CATCH_REQUIRE(a->get_version() == "1.3.2");
             CATCH_REQUIRE(a->previous(2));
             CATCH_REQUIRE(a->get_version() == "1.3.1");
+            CATCH_REQUIRE(a->next(2));
+            CATCH_REQUIRE(a->get_version() == "1.3.2");
         }
 
         {
@@ -311,6 +322,8 @@ CATCH_TEST_CASE("next_previous_debian_versions", "[valid]")
             CATCH_REQUIRE(a->get_version() == "1.3");
             CATCH_REQUIRE(a->previous(1));
             CATCH_REQUIRE(a->get_version() == "1.2");
+            CATCH_REQUIRE(a->next(1));
+            CATCH_REQUIRE(a->get_version() == "1.3");
         }
 
         {
@@ -321,7 +334,51 @@ CATCH_TEST_CASE("next_previous_debian_versions", "[valid]")
             CATCH_REQUIRE(a->get_version() == "1.0");
             CATCH_REQUIRE(a->previous(0));
             CATCH_REQUIRE(a->get_version() == "0.0");
+            CATCH_REQUIRE(a->next(0));
+            CATCH_REQUIRE(a->get_version() == "1.0");
         }
+    }
+    CATCH_END_SECTION()
+
+    CATCH_START_SECTION("next_previous_debian_versions: next/previous with epoch")
+    {
+        versiontheca::versiontheca::pointer_t a(create("75:1.5.3"));
+        CATCH_REQUIRE(a->next(2));
+        CATCH_REQUIRE(a->get_version() == "75:1.5.4");
+        CATCH_REQUIRE(a->previous(2));
+        CATCH_REQUIRE(a->get_version() == "75:1.5.3");
+        CATCH_REQUIRE(a->previous(2));
+        CATCH_REQUIRE(a->get_version() == "75:1.5.2");
+        CATCH_REQUIRE(a->next(2));
+        CATCH_REQUIRE(a->get_version() == "75:1.5.3");
+    }
+    CATCH_END_SECTION()
+
+    CATCH_START_SECTION("next_previous_debian_versions: next/previous with release")
+    {
+        versiontheca::versiontheca::pointer_t a(create("1.5.3-r5"));
+        CATCH_REQUIRE(a->next(2));
+        CATCH_REQUIRE(a->get_version() == "1.5.4-r5");
+        CATCH_REQUIRE(a->previous(2));
+        CATCH_REQUIRE(a->get_version() == "1.5.3-r5");
+        CATCH_REQUIRE(a->previous(2));
+        CATCH_REQUIRE(a->get_version() == "1.5.2-r5");
+        CATCH_REQUIRE(a->next(2));
+        CATCH_REQUIRE(a->get_version() == "1.5.3-r5");
+    }
+    CATCH_END_SECTION()
+
+    CATCH_START_SECTION("next_previous_debian_versions: previous/next with release")
+    {
+        versiontheca::versiontheca::pointer_t a(create("5:1.5.3-r5"));
+        CATCH_REQUIRE(a->previous(4));
+        CATCH_REQUIRE(a->get_version() == "5:1.5.2.4294967295.4294967295-r5");
+        CATCH_REQUIRE(a->next(4));
+        CATCH_REQUIRE(a->get_version() == "5:1.5.3-r5");
+        CATCH_REQUIRE(a->next(4));
+        CATCH_REQUIRE(a->get_version() == "5:1.5.3.0.1-r5");
+        CATCH_REQUIRE(a->previous(4));
+        CATCH_REQUIRE(a->get_version() == "5:1.5.3-r5");
     }
     CATCH_END_SECTION()
 }
@@ -342,19 +399,19 @@ CATCH_TEST_CASE("invalid_debian_versions", "[invalid]")
         versiontheca::debian::pointer_t t(std::make_shared<versiontheca::debian>());
         versiontheca::versiontheca v(t, "");
         CATCH_REQUIRE_FALSE(v.is_valid());
-    }
-    CATCH_END_SECTION()
+        CATCH_REQUIRE(v.get_last_error().empty());
 
-    CATCH_START_SECTION("invalid_debian_versions: empty")
-    {
-        // epoch must be all digits
-        check_version("3A3:1.2.3-pre55", "epoch must be a valid integer.");
+        CATCH_REQUIRE(v.get_version().empty());
+        CATCH_REQUIRE(v.get_last_error() == "no parts to output.");
     }
     CATCH_END_SECTION()
 
     CATCH_START_SECTION("invalid_debian_versions: various invalid epoch")
     {
         // epoch
+        //
+        check_version("3A3:1.2.3-pre55", "epoch must be a valid integer.");
+        check_version("33:-55", "a version value cannot be an empty string.");
         check_version(":", "invalid ':' and/or '-' positions in \":\".");
         check_version("a:", "epoch must be a valid integer.");
         check_version("-10:", "invalid ':' and/or '-' positions in \"-10:\".");
@@ -423,25 +480,26 @@ CATCH_TEST_CASE("invalid_debian_versions", "[invalid]")
                     v += c;
                 }
                 char vc(g_valid_alphanum[rand() % g_valid_alphanum_length]);
+                if(!v.empty()
+                && v.back() == '.'
+                && (vc == ':' || vc == '-' || vc == '.'))
+                {
+                    v += 'N'; // add a nugget between '.' and '-'/':'
+                }
                 if(vc == ':')
                 {
                     if(strchr(v.c_str(), ':') == nullptr)
                     {
                         // on first ':' ensure epoch is a number
+                        //
                         std::string::size_type const p(v.find_first_not_of("0123456789"));
                         if(p != std::string::npos)
                         {
                             // not a number, create such
-                            std::stringstream ss;
-                            if(v[0] < '0' || v[0] > '9')
-                            {
-                                // first character must be a digit
-                                ss << rand() % 10;
-                                v = ss.str() + v;
-                            }
-                            ss << rand();
-                            v = ss.str() + ":" + v;
-                            bad_at += ss.str().length() + 1;
+                            //
+                            std::string const epoch(generate_number());
+                            v = epoch + ":" + v;
+                            bad_at += epoch.length() + 1;
                             continue;
                         }
                     }
@@ -495,17 +553,94 @@ CATCH_TEST_CASE("invalid_debian_versions", "[invalid]")
         }
     }
     CATCH_END_SECTION()
+
+    CATCH_START_SECTION("invalid_debian_versions: max + 1 fails")
+    {
+        versiontheca::versiontheca::pointer_t a(create("4294967295.4294967295.4294967295"));
+        CATCH_REQUIRE(a->is_valid());
+        CATCH_REQUIRE_FALSE(a->next(2));
+        CATCH_REQUIRE_FALSE(a->is_valid());
+        CATCH_REQUIRE(a->get_last_error() == "maximum limit reached; cannot increment version any further.");
+    }
+    CATCH_END_SECTION()
+
+    CATCH_START_SECTION("invalid_debian_versions: min - 1 fails")
+    {
+        versiontheca::versiontheca::pointer_t a(create("0.0"));
+        CATCH_REQUIRE(a->is_valid());
+        CATCH_REQUIRE_FALSE(a->previous(2));
+        CATCH_REQUIRE_FALSE(a->is_valid());
+        CATCH_REQUIRE(a->get_last_error() == "minimum limit reached; cannot decrement version any further.");
+    }
+    CATCH_END_SECTION()
 }
 
 
 CATCH_TEST_CASE("bad_calls", "[invalid]")
 {
-    CATCH_START_SECTION("bad_calls: next/previous without a version")
+    CATCH_START_SECTION("bad_calls: next without a version")
     {
         versiontheca::debian::pointer_t t(std::make_shared<versiontheca::debian>());
         versiontheca::versiontheca v(t);
         CATCH_REQUIRE_FALSE(v.next(0));
-        CATCH_REQUIRE(v.get_last_error() == "no parts in this Debian version. Cannot computer next().");
+        CATCH_REQUIRE(v.get_last_error() == "no parts in this Debian version; cannot computer next/previous.");
+    }
+    CATCH_END_SECTION()
+
+    CATCH_START_SECTION("bad_calls: previous without a version")
+    {
+        versiontheca::debian::pointer_t t(std::make_shared<versiontheca::debian>());
+        versiontheca::versiontheca v(t);
+        CATCH_REQUIRE_FALSE(v.previous(0));
+        CATCH_REQUIRE(v.get_last_error() == "no parts in this Debian version; cannot computer next/previous.");
+    }
+    CATCH_END_SECTION()
+
+    CATCH_START_SECTION("bad_calls: next out of bounds")
+    {
+        versiontheca::versiontheca::pointer_t a(create("1.5.3-r5"));
+        for(int p(-100); p < 0; ++p)
+        {
+            CATCH_REQUIRE_THROWS_MATCHES(
+                  a->next(p)
+                , versiontheca::invalid_parameter
+                , Catch::Matchers::ExceptionMessage(
+                          "versiontheca_exception: position calling next() cannot be a negative number."));
+        }
+        for(int p(versiontheca::MAX_PARTS); p < static_cast<int>(versiontheca::MAX_PARTS + 100); ++p)
+        {
+            CATCH_REQUIRE_THROWS_MATCHES(
+                  a->next(p)
+                , versiontheca::invalid_parameter
+                , Catch::Matchers::ExceptionMessage(
+                          "versiontheca_exception: position calling next() cannot be more than "
+                        + std::to_string(versiontheca::MAX_PARTS)
+                        + "."));
+        }
+    }
+    CATCH_END_SECTION()
+
+    CATCH_START_SECTION("bad_calls: previous out of bounds")
+    {
+        versiontheca::versiontheca::pointer_t a(create("1.5.3-r5"));
+        for(int p(-100); p < 0; ++p)
+        {
+            CATCH_REQUIRE_THROWS_MATCHES(
+                  a->previous(p)
+                , versiontheca::invalid_parameter
+                , Catch::Matchers::ExceptionMessage(
+                          "versiontheca_exception: position calling previous() cannot be a negative number."));
+        }
+        for(int p(versiontheca::MAX_PARTS); p < static_cast<int>(versiontheca::MAX_PARTS + 100); ++p)
+        {
+            CATCH_REQUIRE_THROWS_MATCHES(
+                  a->previous(p)
+                , versiontheca::invalid_parameter
+                , Catch::Matchers::ExceptionMessage(
+                          "versiontheca_exception: position calling previous() cannot be more than "
+                        + std::to_string(versiontheca::MAX_PARTS)
+                        + "."));
+        }
     }
     CATCH_END_SECTION()
 }

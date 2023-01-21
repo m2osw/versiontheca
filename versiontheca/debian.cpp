@@ -68,6 +68,94 @@ namespace versiontheca
 
 
 
+namespace
+{
+
+
+
+int compare_characters(char32_t a, char32_t b)
+{
+    if(a == b)
+    {
+        return 0;
+    }
+    if(a == '\0')
+    {
+        return b == '~' ? 1 : -1;
+    }
+    if(b == '\0')
+    {
+        return a == '~' ? -1 : 1;
+    }
+    if((a >= 'a' && a <= 'z')
+    || (a >= 'A' && a <= 'Z'))
+    {
+        if((b >= 'a' && b <= 'z')
+        && (b >= 'A' && b <= 'Z'))
+        {
+            if(a < b)
+            {
+                return -1;
+            }
+            if(a > b)
+            {
+                return 1;
+            }
+            return 0;
+        }
+        // letters are earlier than non-letters except '~'
+        return b == '~' ? 1 : -1;
+    }
+    if((b >= 'a' && b <= 'z')
+    || (b >= 'A' && b <= 'Z'))
+    {
+        return a == '~' ? -1 : 1;
+    }
+    if(a == '~')
+    {
+        return -1;
+    }
+    if(b == '~')
+    {
+        return 1;
+    }
+    if(a < b)
+    {
+        return -1;
+    }
+    if(a > b)
+    {
+        return 1;
+    }
+    return 0;
+}
+
+
+int compare_strings(std::string const & lhs, std::string const & rhs)
+{
+    // because of the '~' we have to compare everything ('~' is before
+    // '\0'...)
+    //
+    std::size_t const max(std::max(lhs.length(), rhs.length()));
+    for(std::size_t idx(0); idx < max; ++idx)
+    {
+        char const a(idx >= lhs.length() ? '\0' : lhs[idx]);
+        char const b(idx >= rhs.length() ? '\0' : rhs[idx]);
+        int const r(compare_characters(a, b));
+        if(r != 0)
+        {
+            return r;
+        }
+    }
+    return 0;
+}
+
+
+
+}
+// no name namespace
+
+
 /** \brief Parse a debian version string.
  *
  * A debian version string is composed of three parts:
@@ -224,7 +312,7 @@ bool debian::prepare_next_previous(std::size_t & start, std::size_t & end)
     std::size_t const max(size());
     if(max == 0ULL)
     {
-        f_last_error = "no parts in this Debian version. Cannot computer next().";
+        f_last_error = "no parts in this Debian version; cannot computer next/previous.";
         return false;
     }
 
@@ -232,7 +320,7 @@ bool debian::prepare_next_previous(std::size_t & start, std::size_t & end)
     end = size();
     for(std::size_t idx(0); idx < size(); ++idx)
     {
-        if(at(idx).get_type() == ':' && start == 0)
+        if(at(idx).get_type() == ':' && start <= 0)
         {
             start = idx + 1;
         }
@@ -243,10 +331,13 @@ bool debian::prepare_next_previous(std::size_t & start, std::size_t & end)
         }
     }
 
+    // this cannot happen since the standard part is required
+    // (i.e. 123:-blah is not a valid version, it has an empty version in
+    // between and the parser detects that before we can get here)
+    //
     if(static_cast<std::make_signed_t<std::size_t>>(end - start) <= 0)
     {
-        f_last_error = "no standard parts in this Debian version. Cannot computer next().";
-        return false;
+        throw logic_error("no standard parts in this Debian version; cannot computer next/previous.");  // LCOV_EXCL_LINE
     }
 
     return true;
@@ -257,12 +348,12 @@ bool debian::next(int pos, trait::pointer_t format)
 {
     if(pos < 0)
     {
-        throw invalid_parameter("position calling next_version() cannot be a negative number.");
+        throw invalid_parameter("position calling next() cannot be a negative number.");
     }
     if(static_cast<std::size_t>(pos) >= MAX_PARTS)
     {
         throw invalid_parameter(
-              "position calling next_version() cannot be more than "
+              "position calling next() cannot be more than "
             + std::to_string(MAX_PARTS)
             + ".");
     }
@@ -275,6 +366,7 @@ bool debian::next(int pos, trait::pointer_t format)
         return false;
     }
 
+    pos += start;
     if(end <= static_cast<std::size_t>(pos))
     {
         part zero;
@@ -290,12 +382,13 @@ bool debian::next(int pos, trait::pointer_t format)
     {
         if(at(pos) == get_format_part(format, pos, at(pos).is_integer()))
         {
-            if(static_cast<std::size_t>(pos) <= start)
+            if(static_cast<std::size_t>(pos - 1) <= start)
             {
                 f_last_error = "maximum limit reached; cannot increment version any further.";
                 return false;
             }
             erase(pos);
+            --end;
         }
         else
         {
@@ -314,7 +407,12 @@ bool debian::next(int pos, trait::pointer_t format)
         at(1).set_integer(0U);
         ++pos;
     }
-    resize(pos + 1);
+    ++pos;
+    while(static_cast<std::size_t>(pos) < end)
+    {
+        --end;
+        erase(end);
+    }
 
     return true;
 }
@@ -324,13 +422,13 @@ bool debian::previous(int pos, trait::pointer_t format)
 {
     if(pos < 0)
     {
-        throw overflow("position in previous_version() cannot be a negative number.");
+        throw invalid_parameter("position calling previous() cannot be a negative number.");
     }
     if(static_cast<std::size_t>(pos) >= MAX_PARTS)
     {
-        throw overflow(
-              "position in previous_version() cannot be more than "
-            + std::to_string(pos)
+        throw invalid_parameter(
+              "position calling previous() cannot be more than "
+            + std::to_string(MAX_PARTS)
             + ".");
     }
 
@@ -342,6 +440,7 @@ bool debian::previous(int pos, trait::pointer_t format)
         return false;
     }
 
+    pos += start;
     if(end <= static_cast<std::size_t>(pos))
     {
         part zero;
@@ -360,7 +459,7 @@ bool debian::previous(int pos, trait::pointer_t format)
     {
         if(at(pos).is_zero())
         {
-            if(pos == 0)
+            if(static_cast<std::size_t>(pos) <= start)
             {
                 f_last_error = "minimum limit reached; cannot decrement version any further.";
                 return false;
@@ -380,6 +479,15 @@ bool debian::previous(int pos, trait::pointer_t format)
         else
         {
             at(pos).previous();
+
+            while(at(pos).is_zero()
+               && static_cast<std::size_t>(pos + 1) == end)
+            {
+                erase(pos);
+                --end;
+                --pos;
+            }
+
             break;
         }
     }
@@ -429,12 +537,167 @@ std::string debian::to_string() const
 }
 
 
+/** \brief Compare two debian versions against each other.
+ *
+ * Debian versions are considered to be composed of three parts:
+ *
+ * \li epoch
+ * \li upstream version
+ * \li release version
+ *
+ * The epoch is 0 by default (if not defined).
+ *
+ * The upstream version is compared as a list of numbers and strings. It
+ * cannot be empty. The upstream version must start with a number.
+ *
+ * The release is optional and it can include a list of numbers and strings.
+ * The release can start with a string or a number.
+ *
+ * In our case, we do not compare the ':', '.', and '-' characters. These
+ * are viewed as separators. This allows us to compare upstream versions
+ * against each other without \em leaking the epoch or release elements.
+ * However, this is not 100% compatible with the Debian comparator which
+ * may match the release version information against the upstream version.
+ *
+ * As per the sort order definition of the Debian version, strings that
+ * contain the '~' character compares before anything else (including the
+ * empty string), then letters (A-Z, a-z), then everything else is sorted
+ * as per their ASCII code.
+ *
+ * \note
+ * If the right hand side version is not a debian version, then the default
+ * trait compare gets used.
+ *
+ * \param[in] rhs  The right hand side.
+ *
+ * \return 0 if both versions are considered equal; -1 if the left
+ * hand side is considered smaller and 1 if the left hand side is considered
+ * larger.
+ *
+ * \sa compare_characters()
+ */
+int debian::compare(trait::pointer_t rhs) const
+{
+    if(empty() || rhs->empty())
+    {
+        throw empty_version("one or both of the input versions are empty.");
+    }
 
-// /// Structure used to hold all the sub-parts of a part (numbers/alpha)
+    pointer_t deb(std::dynamic_pointer_cast<debian>(rhs));
+    if(deb == nullptr)
+    {
+        // mixed versions, use the default compare() function instead
+        //
+        return trait::compare(rhs);
+    }
+
+    std::size_t lpos(0);
+    std::size_t rpos(0);
+
+    // compare epoch
+    //
+    int lepoch(0);
+    int repoch(0);
+    if(at(0).get_type() == ':')
+    {
+        lepoch = at(0).get_integer();
+        lpos = 1;
+    }
+    if(deb->at(0).get_type() == ':')
+    {
+        repoch = deb->at(0).get_integer();
+        rpos = 1;
+    }
+    if(lepoch != repoch)
+    {
+        return lepoch < repoch ? -1 : 1;
+    }
+
+    // compare upstream version, then switch to the release version
+    //
+    char type('\0');
+    for(;;)
+    {
+        for(bool handle_strings(true);; handle_strings = !handle_strings)
+        {
+            int lint(0);
+            std::string lstr;
+            int rint(0);
+            std::string rstr;
+
+            if(lpos >= size())
+            {
+                if(rpos >= size())
+                {
+                    // we've reached the end of both lists
+                    //
+                    break;
+                }
+            }
+            else if(at(lpos).get_type() == type)
+            {
+                if(handle_strings ^ at(lpos).is_integer())
+                {
+                    if(handle_strings)
+                    {
+                        lstr = at(lpos).get_string();
+                    }
+                    else
+                    {
+                        lint = at(lpos).get_integer();
+                    }
+                    ++lpos;
+                }
+            }
+
+            if(rpos < deb->size()
+            && deb->at(rpos).get_type() == type)
+            {
+                if(handle_strings ^ deb->at(rpos).is_integer())
+                {
+                    if(handle_strings)
+                    {
+                        rstr = deb->at(rpos).get_string();
+                    }
+                    else
+                    {
+                        rint = deb->at(rpos).get_integer();
+                    }
+                    ++rpos;
+                }
+            }
+
+            if(handle_strings)
+            {
+                int const r(compare_strings(lstr, rstr));
+                if(r != 0)
+                {
+                    return r;
+                }
+            }
+            else
+            {
+                if(lint != rint)
+                {
+                    return lint < rint ? -1 : 1;
+                }
+            }
+        }
+        if(type == '-')
+        {
+            // we are done
+            //
+            return 0;
+        }
+        type = '-';
+    }
+}
+
+
+
 // struct debian_version_part_t
 // {
 //     debian_version_part_t()
-//         //: f_str -- auto-init
 //         : f_val(-1)
 //     {
 //     }

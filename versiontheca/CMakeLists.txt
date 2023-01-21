@@ -69,10 +69,13 @@ install(
 
 install(
     FILES
-        base.h
+        basic.h
         debian.h
+        decimal.h
         exception.h
         part.h
+        trait.h
+        versiontheca.h
 
     DESTINATION
         include/versiontheca

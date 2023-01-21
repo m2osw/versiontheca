@@ -328,6 +328,44 @@ bool trait::is_valid_character(char32_t c) const
 }
 
 
+int trait::compare(trait::pointer_t rhs) const
+{
+    if(empty() || rhs->empty())
+    {
+        throw empty_version("one or both of the input versions are empty.");
+    }
+
+    std::size_t const max(std::max(size(), rhs->size()));
+    for(std::size_t idx(0); idx < max; ++idx)
+    {
+        if(idx >= size())
+        {
+            if(idx < rhs->size()
+            && !rhs->f_parts[idx].is_zero())
+            {
+                return -1;
+            }
+        }
+        else if(idx >= rhs->size())
+        {
+            if(!f_parts[idx].is_zero())
+            {
+                return 1;
+            }
+        }
+        else
+        {
+            int const r(f_parts[idx].compare(rhs->f_parts[idx]));
+            if(r != 0)
+            {
+                return r;
+            }
+        }
+    }
+    return 0;
+}
+
+
 /** \brief Default canonicalization of a version.
  *
  * By default, we generate a string with is composed of each part separated
@@ -347,7 +385,7 @@ std::string trait::to_string() const
     // ignore all .0 at the end except for the minor version
     // (i.e. "1.0" keep that zero)
     //
-    std::size_t max(size());
+    std::size_t const max(size());
     if(max == 0)
     {
         f_last_error = "no parts to output.";

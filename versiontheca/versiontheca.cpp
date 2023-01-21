@@ -189,45 +189,12 @@ std::string versiontheca::get_last_error(bool clear) const
 
 int versiontheca::compare(versiontheca const & rhs) const
 {
-    std::size_t const max(std::min(f_trait->size(), rhs.f_trait->size()));
-    if(max == 0)
+    if(!f_valid || !rhs.f_valid)
     {
-        throw empty("one of the input versions is empty (set_version() never called?).");
+        throw invalid_version("one or both of the input versions are not valid.");
     }
-    for(std::size_t idx(0); idx < max; ++idx)
-    {
-        int const r(f_trait->at(idx).compare(rhs.f_trait->at(idx)));
-        if(r != 0)
-        {
-            return r;
-        }
-    }
-    if(f_trait->size() == rhs.f_trait->size())
-    {
-        return 0;
-    }
-    if(f_trait->size() > rhs.f_trait->size())
-    {
-        for(std::size_t idx(0); idx < f_trait->size(); ++idx)
-        {
-            if(!f_trait->at(idx).is_zero())
-            {
-                return 1;
-            }
-        }
-        return 0;
-    }
-    else
-    {
-        for(std::size_t idx(0); idx < rhs.f_trait->size(); ++idx)
-        {
-            if(!rhs.f_trait->at(idx).is_zero())
-            {
-                return -1;
-            }
-        }
-        return 0;
-    }
+
+    return f_trait->compare(rhs.f_trait);
 }
 
 

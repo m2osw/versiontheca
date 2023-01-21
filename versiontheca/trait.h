@@ -65,6 +65,7 @@ public:
 
     virtual bool        parse(std::string const & v);
     virtual bool        is_valid_character(char32_t c) const;
+    virtual int         compare(trait::pointer_t rhs) const;
 
     virtual bool        next(int pos, pointer_t format);
     virtual bool        previous(int pos, pointer_t format);

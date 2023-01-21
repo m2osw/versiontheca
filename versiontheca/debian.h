@@ -44,6 +44,7 @@ public:
 
     virtual bool        parse(std::string const & v) override;
     virtual bool        is_valid_character(char32_t c) const override;
+    virtual int         compare(trait::pointer_t rhs) const override;
 
     virtual bool        next(int pos, trait::pointer_t format) override;
     virtual bool        previous(int pos, trait::pointer_t format) override;

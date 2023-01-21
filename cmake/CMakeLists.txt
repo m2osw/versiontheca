@@ -20,7 +20,7 @@ project(versiontheca_cmake)
 
 install(
     FILES
-        ${CMAKE_CURRENT_BINARY_DIR}/VersionthecaConfig.cmake
+        VersionthecaConfig.cmake
 
     DESTINATION
         share/cmake/Versiontheca

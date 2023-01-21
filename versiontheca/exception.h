@@ -33,8 +33,9 @@ DECLARE_LOGIC_ERROR(overflow);
 
 DECLARE_MAIN_EXCEPTION(versiontheca_exception);
 
-DECLARE_EXCEPTION(versiontheca_exception, empty);
+DECLARE_EXCEPTION(versiontheca_exception, empty_version);
 DECLARE_EXCEPTION(versiontheca_exception, invalid_parameter);
+DECLARE_EXCEPTION(versiontheca_exception, invalid_version);
 DECLARE_EXCEPTION(versiontheca_exception, missing_pointer);
 DECLARE_EXCEPTION(versiontheca_exception, wrong_type);
 
