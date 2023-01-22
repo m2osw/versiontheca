@@ -30,6 +30,7 @@
 #include    <versiontheca/debian.h>
 #include    <versiontheca/decimal.h>
 #include    <versiontheca/exception.h>
+#include    <versiontheca/rpm.h>
 #include    <versiontheca/version.h>
 #include    <versiontheca/versiontheca.h>
 
@@ -60,6 +61,7 @@ enum class version_type_t
     VERSION_TYPE_BASIC,
     VERSION_TYPE_DEBIAN,
     VERSION_TYPE_DECIMAL,
+    VERSION_TYPE_RPM,
 };
 
 enum class function_t
@@ -125,6 +127,7 @@ void usage()
            "  -l | --limit <N>     compare the first N parts\n"
            "  -n | --next <N>      compute next versions\n"
            "  -p | --previous <N>  compute previous versions\n"
+           "  -r | --rpm           read versions as RPM versions\n"
            "  -v | --validate      validate versions (instead of comparing)\n"
            "  -V | --version       print out the version\n"
            "\n"
@@ -152,8 +155,11 @@ versiontheca::versiontheca::pointer_t create_version(std::string const & v)
         break;
 
     case version_type_t::VERSION_TYPE_DEBIAN:
-std::cerr << "--- debian?\n";
         t = std::make_shared<versiontheca::debian>();
+        break;
+
+    case version_type_t::VERSION_TYPE_RPM:
+        t = std::make_shared<versiontheca::rpm>();
         break;
 
     case version_type_t::VERSION_TYPE_DECIMAL:
@@ -522,6 +528,12 @@ int main(int argc, char * argv[])
             || strcmp(argv[i], "-d") == 0)
             {
                 set_version_type(version_type_t::VERSION_TYPE_DEBIAN);
+                continue;
+            }
+            if(strcmp(argv[i], "--rpm") == 0
+            || strcmp(argv[i], "-r") == 0)
+            {
+                set_version_type(version_type_t::VERSION_TYPE_RPM);
                 continue;
             }
             if(strcmp(argv[i], "--decimal") == 0

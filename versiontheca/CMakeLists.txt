@@ -17,6 +17,70 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 ##
+## Debian compare characters
+##
+project(debian-order)
+
+add_executable(${PROJECT_NAME}
+    debian_order.cpp
+)
+
+project(debian-order-table)
+
+set(DEBIAN_ORDER_TABLE_CI ${PROJECT_BINARY_DIR}/debian_order_table.ci)
+
+add_custom_command(
+    OUTPUT
+        ${DEBIAN_ORDER_TABLE_CI}
+
+    COMMAND
+        debian-order >${DEBIAN_ORDER_TABLE_CI}
+
+    WORKING_DIRECTORY
+        ${PROJECT_BINARY_DIR}
+
+    DEPENDS
+        debian-order
+)
+
+add_custom_target(${PROJECT_NAME}
+    DEPENDS
+        ${DEBIAN_ORDER_TABLE_CI}
+)
+
+##
+## RPM compare characters
+##
+project(rpm-order)
+
+add_executable(${PROJECT_NAME}
+    rpm_order.cpp
+)
+
+project(rpm-order-table)
+
+set(RPM_ORDER_TABLE_CI ${PROJECT_BINARY_DIR}/rpm_order_table.ci)
+
+add_custom_command(
+    OUTPUT
+        ${RPM_ORDER_TABLE_CI}
+
+    COMMAND
+        rpm-order >${RPM_ORDER_TABLE_CI}
+
+    WORKING_DIRECTORY
+        ${PROJECT_BINARY_DIR}
+
+    DEPENDS
+        rpm-order
+)
+
+add_custom_target(${PROJECT_NAME}
+    DEPENDS
+        ${RPM_ORDER_TABLE_CI}
+)
+
+##
 ## versiontheca library
 ##
 project(versiontheca)
@@ -31,9 +95,13 @@ add_library(${PROJECT_NAME} SHARED
     debian.cpp
     decimal.cpp
     part.cpp
+    rpm.cpp
     trait.cpp
     version.cpp
     versiontheca.cpp
+
+    ${DEBIAN_ORDER_TABLE_CI}
+    ${RPM_ORDER_TABLE_CI}
 )
 
 target_include_directories(${PROJECT_NAME}
@@ -74,6 +142,7 @@ install(
         decimal.h
         exception.h
         part.h
+        rpm.h
         trait.h
         versiontheca.h
 

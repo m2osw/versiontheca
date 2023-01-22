@@ -187,6 +187,12 @@ std::string versiontheca::get_last_error(bool clear) const
 }
 
 
+trait::pointer_t versiontheca::get_trait() const
+{
+    return f_trait;
+}
+
+
 int versiontheca::compare(versiontheca const & rhs) const
 {
     if(!f_valid || !rhs.f_valid)

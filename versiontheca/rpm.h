@@ -18,9 +18,9 @@
 #pragma once
 
 /** \file
- * \brief Functions used to parse and compare Debian versions.
+ * \brief Functions used to parse and compare RPM versions.
  *
- * The library supports ways to specifically handle Debian versions in C++.
+ * The library supports ways to specifically handle RPM versions in C++.
  *
  * This file describes the necessary functions to parse a version and then
  * compare two versions together.
@@ -36,14 +36,16 @@ namespace versiontheca
 
 
 
-class debian
+class rpm
     : public trait
 {
 public:
-    typedef std::shared_ptr<debian>       pointer_t;
+    typedef std::shared_ptr<rpm>       pointer_t;
 
     virtual bool        parse(std::string const & v) override;
     virtual bool        is_valid_character(char32_t c) const override;
+    virtual bool        is_separator(char32_t c) const override;
+    bool                is_epoch_required() const;
     virtual int         compare(trait::pointer_t rhs) const override;
 
     virtual bool        next(int pos, trait::pointer_t format) override;
@@ -52,17 +54,7 @@ public:
     virtual std::string to_string() const override;
 
 private:
-    enum class accepted_chars_t
-    {
-        ACCEPTED_CHARS_EPOCH,
-        ACCEPTED_CHARS_UPSTREAM,
-        ACCEPTED_CHARS_DEBIAN_REVISION,
-    };
-
     bool                get_upstream_positions(std::size_t & start, std::size_t & end) const;
-    bool                is_epoch_required() const;
-
-    accepted_chars_t    f_accepted_chars = accepted_chars_t::ACCEPTED_CHARS_EPOCH;
 };
 
 

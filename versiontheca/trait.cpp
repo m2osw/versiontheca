@@ -31,7 +31,7 @@
 // snapdev
 //
 #include    <snapdev/hexadecimal_string.h>
-#include    <snapdev/tokenize_string.h>
+#include    <snapdev/not_reached.h>
 
 
 // libutf8
@@ -94,8 +94,7 @@ void trait::push_back(part const & p)
 {
     if(f_parts.size() >= MAX_PARTS)
     {
-std::cerr << "version so far: [" << to_string() << "]\n";
-        throw overflow("trying to append more parts when maximum was already reached.");
+        throw invalid_parameter("trying to append more parts when maximum was already reached.");
     }
 
     f_parts.push_back(p);
@@ -106,7 +105,7 @@ void trait::insert(int index, part const & p)
 {
     if(f_parts.size() >= MAX_PARTS)
     {
-        throw overflow("trying to insert more parts when maximum was already reached.");
+        throw invalid_parameter("trying to insert more parts when maximum was already reached.");
     }
 
     f_parts.insert(f_parts.begin() + index, p);
@@ -117,7 +116,7 @@ void trait::erase(int index)
 {
     if(static_cast<std::size_t>(index) >= f_parts.size())
     {
-        throw overflow("trying to erase a non-existant part.");
+        throw invalid_parameter("trying to erase a non-existant part.");
     }
 
     f_parts.erase(f_parts.begin() + index);
@@ -140,7 +139,7 @@ void trait::resize(std::size_t sz)
 {
     if(sz > MAX_PARTS)
     {
-        throw overflow("requested too many parts");
+        throw invalid_parameter("requested too many parts");
     }
 
     f_parts.resize(sz);
@@ -207,26 +206,25 @@ bool trait::parse(std::string const & v)
 
 bool trait::parse_version(std::string const & v, char32_t sep)
 {
-    std::list<std::string> numbers;
-    snapdev::tokenize_string(numbers, v, { "." });
-  
-    for(auto const & n : numbers)
+    libutf8::utf8_iterator it(v);
+    std::string value;
+    for(char32_t c(*it); c != libutf8::EOS; ++it, c = *it)
     {
-        if(!parse_value(n, sep))
+        if(is_separator(c))
         {
-            return false;
+            if(!parse_value(value, sep))
+            {
+                return false;
+            }
+            sep = c;
+            value.clear();
         }
-        sep = U'.';
+        else
+        {
+            value += libutf8::to_u8string(c);
+        }
     }
-
-    // this should never happen
-    //
-    if(empty())
-    {
-        throw logic_error("parse() found no parts even though the list of numbers was not empty."); // LCOV_EXCL_LINE
-    }
-
-    return true;
+    return parse_value(value, sep);
 }
 
 
@@ -324,13 +322,19 @@ bool trait::is_valid_character(char32_t c) const
         return false;
     }
 
-    return c != '.';
+    return c != U'.';
+}
+
+
+bool trait::is_separator(char32_t c) const
+{
+    return c == U'.';
 }
 
 
 int trait::compare(trait::pointer_t rhs) const
 {
-    if(empty() || rhs->empty())
+    if(empty() || rhs == nullptr || rhs->empty())
     {
         throw empty_version("one or both of the input versions are empty.");
     }
@@ -382,28 +386,33 @@ int trait::compare(trait::pointer_t rhs) const
  */
 std::string trait::to_string() const
 {
-    // ignore all .0 at the end except for the minor version
-    // (i.e. "1.0" keep that zero)
-    //
-    std::size_t const max(size());
+    std::size_t max(size());
     if(max == 0)
     {
         f_last_error = "no parts to output.";
         return std::string();
     }
+    while(max > 1 && at(max - 1).is_zero())
+    {
+        --max;
+    }
     std::string result;
     for(std::size_t idx(0); idx < max; ++idx)
     {
-        char const sep(at(idx).get_separator());
-        if(sep != '\0')
+        char32_t const sep(at(idx).get_separator());
+        if(sep != U'\0')
         {
             if(idx == 0)
             {
                 throw logic_error("the very first part should not have a separator defined (it is not supported).");
             }
-            result += sep;
+            result += libutf8::to_u8string(sep);
         }
         result += at(idx).to_string();
+    }
+    if(max == 1)
+    {
+        result += ".0";
     }
     return result;
 }
@@ -421,6 +430,10 @@ part trait::get_format_part(pointer_t format, int pos, bool integer)
     if(integer)
     {
         maximum.set_to_max_integer();
+        if(pos != 0)
+        {
+            maximum.set_separator(U'.');
+        }
     }
     else
     {
@@ -456,22 +469,36 @@ bool trait::next(int pos, pointer_t format)
 {
     if(pos < 0)
     {
-        throw overflow("position in next() cannot be a negative number.");
+        throw invalid_parameter("position calling next() cannot be a negative number.");
     }
     if(static_cast<std::size_t>(pos) >= MAX_PARTS)
     {
-        throw overflow(
-              "position in next() cannot be more than "
-            + std::to_string(pos)
+        throw invalid_parameter(
+              "position calling next() cannot be more than "
+            + std::to_string(MAX_PARTS)
             + ".");
     }
 
-    part zero;
-    zero.set_integer(0U);
-    zero.set_separator(U'.');
-    while(f_parts.size() <= static_cast<std::size_t>(pos))
+    if(static_cast<std::size_t>(pos) >= f_parts.size())
     {
-        f_parts.push_back(zero);
+        part zero;
+        part alpha;
+        do
+        {
+            part const f(get_format_part(format, f_parts.size(), true));
+            if(f.is_integer())
+            {
+                zero.set_separator(f.get_separator());
+                f_parts.push_back(zero);
+            }
+            else
+            {
+                alpha.set_string(std::string(f.get_string().length(), 'A'));
+                alpha.set_separator(f.get_separator());
+                f_parts.push_back(alpha);
+            }
+        }
+        while(static_cast<std::size_t>(pos) >= f_parts.size());
     }
     for(;;)
     {
@@ -482,8 +509,8 @@ bool trait::next(int pos, pointer_t format)
                 f_last_error = "maximum limit reached; cannot increment version any further.";
                 return false;
             }
-            f_parts.resize(pos);
-            // "recursive"
+            erase(pos);
+            --pos;
         }
         else
         {
@@ -499,7 +526,7 @@ bool trait::next(int pos, pointer_t format)
     && f_parts.size() >= 2
     && f_parts[1].is_integer())
     {
-        f_parts[1].set_integer(0);
+        f_parts[1].set_integer(0U);
         ++pos;
     }
     f_parts.resize(pos + 1);
@@ -533,50 +560,58 @@ bool trait::previous(int pos, pointer_t format)
 {
     if(pos < 0)
     {
-        throw overflow("position in previous() cannot be a negative number.");
+        throw invalid_parameter("position calling previous() cannot be a negative number.");
     }
     if(static_cast<std::size_t>(pos) >= MAX_PARTS)
     {
-        throw overflow(
-              "position in previous() cannot be more than "
-            + std::to_string(pos)
+        throw invalid_parameter(
+              "position calling previous() cannot be more than "
+            + std::to_string(MAX_PARTS)
             + ".");
     }
 
-    bool result(false);
+    if(static_cast<std::size_t>(pos) >= f_parts.size())
+    {
+        // we do not need the format because it's all going to be
+        // zeroes and thus the loop below will take care of fixing
+        // each part with the proper format
+        //
+        part zero;
+        zero.set_separator(U'.');
+        do
+        {
+            f_parts.push_back(zero);
+        }
+        while(static_cast<std::size_t>(pos) >= f_parts.size());
+    }
+
     for(;;)
     {
-        while(static_cast<std::size_t>(pos) > f_parts.size())
-        {
-            part z;
-            z.set_integer(0U);
-            z.set_separator(U'.');
-            f_parts.push_back(z);
-        }
-        if(static_cast<std::size_t>(pos) == f_parts.size())
-        {
-            result = true;
-            f_parts.push_back(format->at(pos));
-        }
-        else if(f_parts[pos].is_zero())
+        if(f_parts[pos].is_zero())
         {
             if(pos == 0)
             {
                 f_last_error = "minimum limit reached; cannot decrement version any further.";
                 return false;
             }
-            result = false;
-            f_parts[pos] = format->at(pos);
+            f_parts[pos] = get_format_part(format, pos, f_parts[pos].is_integer());
             --pos;
-            continue;
         }
         else
         {
             f_parts[pos].previous();
+
+            while(pos > 1
+               && f_parts[pos].is_zero()
+               && static_cast<std::size_t>(pos + 1) == f_parts.size())
+            {
+                erase(pos);
+                --pos;
+            }
+            return true;
         }
     }
-
-    return true;
+    snapdev::NOT_REACHED();
 }
 
 

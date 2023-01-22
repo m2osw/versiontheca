@@ -65,6 +65,7 @@ public:
     part_integer_t      get_patch() const;
     part_integer_t      get_build() const;
     std::string         get_last_error(bool clear = true) const;
+    trait::pointer_t    get_trait() const;
 
     int                 compare(versiontheca const & rhs) const;
     bool                operator == (versiontheca const & rhs) const;

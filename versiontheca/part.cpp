@@ -28,16 +28,9 @@
 #include    <libutf8/libutf8.h>
 
 
-// snapdev
-//
-//#include    <snapdev/not_reached.h>
-
-
 // C++
 //
-//#include    <cstdint>
-//#include    <string>
-//#include    <vector>
+#include    <iostream>
 
 
 // last include
@@ -226,15 +219,24 @@ bool part::next()
         while(pos > 0)
         {
             --pos;
-            if(s[pos] >= 'a' && s[pos] < 'z')
+            if((s[pos] >= 'A' && s[pos] < 'Z')
+            || (s[pos] >= 'a' && s[pos] < 'z'))
             {
                 ++s[pos];
                 break;
             }
-            if(s[pos] == 'z')
+            if(s[pos] == 'Z')
             {
                 s[pos] = 'a';
+                break;
             }
+            if(s[pos] == 'z')
+            {
+                // wrap around + carry (continue)
+                //
+                s[pos] = 'A';
+            }
+            // else -- no changes to that character (+ or :)
         }
         if(s <= f_string)
         {
@@ -266,12 +268,18 @@ bool part::previous()
         while(pos > 0)
         {
             --pos;
-            if(s[pos] > 'a' && s[pos] <= 'z')
+            if((s[pos] > 'A' && s[pos] <= 'Z')
+            || (s[pos] > 'a' && s[pos] <= 'z'))
             {
                 --s[pos];
                 break;
             }
             if(s[pos] == 'a')
+            {
+                s[pos] = 'Z';
+                break;
+            }
+            if(s[pos] == 'A')
             {
                 s[pos] = 'z';
             }
@@ -368,7 +376,7 @@ bool part::is_zero() const
     {
         for(auto const & c : f_string)
         {
-            if(c != 'a')
+            if(c != 'A')
             {
                 return false;
             }

@@ -29,7 +29,6 @@ namespace versiontheca
 
 
 DECLARE_LOGIC_ERROR(logic_error);
-DECLARE_LOGIC_ERROR(overflow);
 
 DECLARE_MAIN_EXCEPTION(versiontheca_exception);
 

@@ -39,20 +39,7 @@
 
 // C++
 //
-//#include    <string>
-//#include    <memory>
-////#include  <iostream> // used for debug purposes
-//#include    <sstream>
 #include    <algorithm>
-//#include    <vector>
-//#include    <stdexcept>
-
-
-// C
-//
-//#include    <errno.h>
-//#include    <string.h>
-//#include    <stdio.h>
 
 
 // last include
@@ -80,6 +67,7 @@ bool basic::parse(std::string const & v)
     {
         if(!at(idx).is_integer())
         {
+            f_last_error = "basic versions only support integers separated by periods (.).";
             return false;
         }
     }

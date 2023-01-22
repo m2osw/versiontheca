@@ -29,6 +29,7 @@ if(SnapCatch2_FOUND)
     add_executable(${PROJECT_NAME}
         catch_main.cpp
 
+        catch_basic.cpp
         catch_debian.cpp
         catch_version.cpp
     )
