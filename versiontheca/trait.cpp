@@ -78,18 +78,6 @@ part const & trait::at(int index) const
 }
 
 
-part & trait::operator [] (int index)
-{
-    return f_parts.operator [] (index);
-}
-
-
-part const & trait::operator [] (int index) const
-{
-    return f_parts.operator [] (index);
-}
-
-
 void trait::push_back(part const & p)
 {
     if(f_parts.size() >= MAX_PARTS)
@@ -404,7 +392,7 @@ std::string trait::to_string() const
         {
             if(idx == 0)
             {
-                throw logic_error("the very first part should not have a separator defined (it is not supported).");
+                throw logic_error("the very first part should not have a separator defined (it is not supported)."); // LCOV_EXCL_LINE
             }
             result += libutf8::to_u8string(sep);
         }
@@ -464,6 +452,8 @@ part trait::get_format_part(pointer_t format, int pos, bool integer)
  *
  * \param[in] pos  The position of the part to update, zero based.
  * \param[in] format  The format defining the maximum value each part can have.
+ *
+ * \return true if the next version was successfully computed.
  */
 bool trait::next(int pos, pointer_t format)
 {
@@ -555,6 +545,8 @@ bool trait::next(int pos, pointer_t format)
  *
  * \param[in] pos  The position of the part to update, zero based.
  * \param[in] format  The format defining the maximum value each part can have.
+ *
+ * \return true if the previous version was successfully computed.
  */
 bool trait::previous(int pos, pointer_t format)
 {

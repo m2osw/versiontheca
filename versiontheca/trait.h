@@ -54,8 +54,6 @@ public:
     void                clear();
     part &              at(int index);
     part const &        at(int index) const;
-    part &              operator [] (int index);
-    part const &        operator [] (int index) const;
     void                push_back(part const & p);
     void                insert(int index, part const & p);
     void                erase(int index);
