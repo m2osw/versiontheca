@@ -16,6 +16,22 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
+/** \file
+ * \brief Implementation of the version parts.
+ *
+ * Each version is composed of one or more part. The empty version (no parts)
+ * is considered invalid although it represents version `0.0`, it is unusable
+ * in most cases.
+ *
+ * The parts support a type allowing different version implementations
+ * (a.k.a. traits) to group parts into sections. For example, the Debian
+ * and RPM traits recognized three sections: the Epoch (`':'`), the upstream
+ * version (`'\\0'`), and the release (`'-'`).
+ *
+ * A part is either a number (32 bit unsigned integer) or a string. Separators
+ * are not considered to be part of the string.
+ */
+
 // self
 //
 #include    <versiontheca/part.h>
@@ -79,19 +95,20 @@ void part::set_separator(char32_t separator)
 }
 
 
-/** \brief Define the number of significant zeroes.
+/** \brief Define the number of digits in that part.
  *
- * In a version such as 1.001, the number of significant zereos is 2. This
- * is useful for versions that view their numbers as a decimal number. In
- * other words, when 1.1 > 1.001 because the first version represents
- * 1.100 and 100 > 001.
+ * In a version such as `1.001`, the number of significant zeroes in the
+ * second part (`001`) is important. This is reflected by the total number
+ * of digits, or width of that number, including the zeroes. This
+ * is useful for versions that view their numbers as a decimal numbers.
+ * In other words, when `1.1 > 1.001` because the first version represents
+ * `1.100` and `100 > 1`.
  *
- * \param[in] significant_zeroes  The number of zeroes left of the first
- * non-zero digit in this number.
+ * \param[in] width  The number of digits in this part's number.
  */
-void part::set_significant_zeroes(std::uint8_t significant_zeroes)
+void part::set_width(std::uint8_t width)
 {
-    f_significant_zeroes = significant_zeroes;
+    f_width = width;
 }
 
 
@@ -119,7 +136,7 @@ void part::set_type(char type)
  * \exception overflow
  * This overflow exception is raised if \p value is composed of a number
  * larger than part_integer_t can hold (2^32-1). To avoid this error, you
- * can try the set_string_value() instead.
+ * can try the set_string() instead.
  *
  * \param[in] value  The value to save in this part.
  *
@@ -139,7 +156,7 @@ bool part::set_value(std::string const & value)
             if(integer < old)
             {
                 // note: if you want to accept really large numbers as strings
-                //       then make sure to use the set_string_value() instead
+                //       then make sure to use the set_string() instead
                 //
                 f_last_error = "integer too large for a valid version.";
                 return false;
@@ -302,9 +319,9 @@ char32_t part::get_separator() const
 }
 
 
-std::uint8_t part::get_significant_zeroes() const
+std::uint8_t part::get_width() const
 {
-    return f_significant_zeroes;
+    return f_width;
 }
 
 
@@ -416,42 +433,6 @@ int part::compare(part const & rhs) const
         return 1;
     }
     return 0;
-}
-
-
-bool part::operator == (part const & rhs) const
-{
-    return compare(rhs) == 0;
-}
-
-
-bool part::operator != (part const & rhs) const
-{
-    return compare(rhs) != 0;
-}
-
-
-bool part::operator < (part const & rhs) const
-{
-    return compare(rhs) < 0;
-}
-
-
-bool part::operator <= (part const & rhs) const
-{
-    return compare(rhs) <= 0;
-}
-
-
-bool part::operator > (part const & rhs) const
-{
-    return compare(rhs) > 0;
-}
-
-
-bool part::operator >= (part const & rhs) const
-{
-    return compare(rhs) >= 0;
 }
 
 

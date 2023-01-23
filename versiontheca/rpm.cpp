@@ -319,9 +319,9 @@ bool rpm::next(int pos, trait::pointer_t format)
         }
         while(end <= static_cast<std::size_t>(pos));
     }
-    for(;; --pos)
+    for(;;)
     {
-        if(at(pos) == get_format_part(format, pos, at(pos).is_integer()))
+        if(at(pos).compare(get_format_part(format, pos, at(pos).is_integer())) == 0)
         {
             if(static_cast<std::size_t>(pos - 1) <= start)
             {
@@ -330,6 +330,7 @@ bool rpm::next(int pos, trait::pointer_t format)
             }
             erase(pos);
             --end;
+            --pos;
         }
         else
         {

@@ -18,12 +18,18 @@
 #pragma once
 
 /** \file
- * \brief Trait used to parse and compare decimal versions.
+ * \brief Trait used to parse and compare unicode versions.
  *
- * The library supports ways to specifically handle decimal versions in C++.
+ * The library supports this trait which accepts any character in the string
+ * parts of the version, including any unicode character. The only non-allowed
+ * characters are control characters.
  *
- * This trait is used to transform a simple version defined as two numbers
- * separated by one period in a decimal number (a double).
+ * \note
+ * At the moment, only ASCII digits (code 0x30 to 0x39) are viewed as numbers.
+ * Later, other non-fractional unicode numbers (such as circled numbers) will
+ * be viewed as digits (once the libutf8 has support to detect those
+ * characers). So make sure not to use those numbers in your strings because
+ * later they will not compare properly.
  */
 
 // self
@@ -36,18 +42,11 @@ namespace versiontheca
 
 
 
-class decimal
+class unicode
     : public trait
 {
 public:
-    typedef std::shared_ptr<decimal>       pointer_t;
-
-    virtual bool        parse(std::string const & v) override;
-    virtual bool        is_valid_character(char32_t c) const override;
-
-    virtual std::string to_string() const;
-
-    double              get_decimal_version() const;
+    typedef std::shared_ptr<unicode>       pointer_t;
 };
 
 

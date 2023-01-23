@@ -18,12 +18,23 @@
 #pragma once
 
 /** \file
- * \brief Trait used to parse and compare decimal versions.
+ * \brief Trait used to parse and compare roman versions.
  *
- * The library supports ways to specifically handle decimal versions in C++.
+ * The trait allows the version numbers to be written in roman numerals.
  *
- * This trait is used to transform a simple version defined as two numbers
- * separated by one period in a decimal number (a double).
+ * \li I -- represents 1
+ * \li V -- represents 5
+ * \li X -- represents 10
+ * \li L -- represents 50
+ * \li C -- represents 100
+ * \li D -- represents 500
+ * \li M -- represents 1000
+ *
+ * The parser understands many syntaxes, but in most cases you want to use
+ * the "subtract one" version instead of the "four of this" syntax. So to
+ * write the roman numeral 4, you want to use IV instead of IIII.
+ *
+ * The parser ignores case, so ix and IX both represent 9.
  */
 
 // self
@@ -36,18 +47,19 @@ namespace versiontheca
 
 
 
-class decimal
+part_integer_t  from_roman_number(std::string const & value);
+std::string     to_roman_number(part_integer_t value);
+
+
+
+class roman
     : public trait
 {
 public:
-    typedef std::shared_ptr<decimal>       pointer_t;
+    typedef std::shared_ptr<roman>       pointer_t;
 
     virtual bool        parse(std::string const & v) override;
-    virtual bool        is_valid_character(char32_t c) const override;
-
-    virtual std::string to_string() const;
-
-    double              get_decimal_version() const;
+    virtual std::string to_string() const override;
 };
 
 

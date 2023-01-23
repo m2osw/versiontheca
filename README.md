@@ -8,6 +8,12 @@ src="https://snapwebsites.org//sites/snapwebsites.org/files/images/versiontheca.
 
 A library to manage version strings in C++ and with a command line tool.
 
+The library makes use of the libutf8 library to parse the input strings.
+Although some version traits, such as Debian and RPM, do not allow characters
+other than the basic latin letters (A-Z and a-z), other traits may support
+the full Unicode character set. The input and output is all expected to be
+valid UTF-8.
+
 ## Basics About Versions
 
 Versions are generally defined by the project using them. However, some

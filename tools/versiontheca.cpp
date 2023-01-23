@@ -30,7 +30,9 @@
 #include    <versiontheca/debian.h>
 #include    <versiontheca/decimal.h>
 #include    <versiontheca/exception.h>
+#include    <versiontheca/roman.h>
 #include    <versiontheca/rpm.h>
+#include    <versiontheca/unicode.h>
 #include    <versiontheca/version.h>
 #include    <versiontheca/versiontheca.h>
 
@@ -61,7 +63,9 @@ enum class version_type_t
     VERSION_TYPE_BASIC,
     VERSION_TYPE_DEBIAN,
     VERSION_TYPE_DECIMAL,
+    VERSION_TYPE_ROMAN,
     VERSION_TYPE_RPM,
+    VERSION_TYPE_UNICODE,
 };
 
 enum class function_t
@@ -127,7 +131,9 @@ void usage()
            "  -l | --limit <N>     compare the first N parts\n"
            "  -n | --next <N>      compute next versions\n"
            "  -p | --previous <N>  compute previous versions\n"
+           "  -R | --roman         read versions as Unicode allowing roman numerals\n"
            "  -r | --rpm           read versions as RPM versions\n"
+           "  -u | --unicode       read versions as Unicode versions\n"
            "  -v | --validate      validate versions (instead of comparing)\n"
            "  -V | --version       print out the version\n"
            "\n"
@@ -158,8 +164,16 @@ versiontheca::versiontheca::pointer_t create_version(std::string const & v)
         t = std::make_shared<versiontheca::debian>();
         break;
 
+    case version_type_t::VERSION_TYPE_ROMAN:
+        t = std::make_shared<versiontheca::roman>();
+        break;
+
     case version_type_t::VERSION_TYPE_RPM:
         t = std::make_shared<versiontheca::rpm>();
+        break;
+
+    case version_type_t::VERSION_TYPE_UNICODE:
+        t = std::make_shared<versiontheca::unicode>();
         break;
 
     case version_type_t::VERSION_TYPE_DECIMAL:
@@ -530,10 +544,22 @@ int main(int argc, char * argv[])
                 set_version_type(version_type_t::VERSION_TYPE_DEBIAN);
                 continue;
             }
+            if(strcmp(argv[i], "--roman") == 0
+            || strcmp(argv[i], "-R") == 0)
+            {
+                set_version_type(version_type_t::VERSION_TYPE_ROMAN);
+                continue;
+            }
             if(strcmp(argv[i], "--rpm") == 0
             || strcmp(argv[i], "-r") == 0)
             {
                 set_version_type(version_type_t::VERSION_TYPE_RPM);
+                continue;
+            }
+            if(strcmp(argv[i], "--unicode") == 0
+            || strcmp(argv[i], "-u") == 0)
+            {
+                set_version_type(version_type_t::VERSION_TYPE_UNICODE);
                 continue;
             }
             if(strcmp(argv[i], "--decimal") == 0

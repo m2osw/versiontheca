@@ -18,7 +18,7 @@
 
 // tested file
 //
-#include    "versiontheca/basic.h"
+#include    "versiontheca/unicode.h"
 
 
 // self
@@ -31,6 +31,11 @@
 //
 #include    "versiontheca/exception.h"
 #include    "versiontheca/versiontheca.h"
+
+
+// libutf8
+//
+#include    "libutf8/libutf8.h"
 
 
 // C++
@@ -49,17 +54,26 @@ namespace
 
 versiontheca::versiontheca::pointer_t create(char const * version, char const * verify = nullptr)
 {
-    versiontheca::basic::pointer_t t(std::make_shared<versiontheca::basic>());
+    versiontheca::unicode::pointer_t t(std::make_shared<versiontheca::unicode>());
     versiontheca::versiontheca::pointer_t v(std::make_shared<versiontheca::versiontheca>(t, version));
-    CATCH_REQUIRE(v->get_version() == (verify == nullptr ? version : verify));
+    if(verify == nullptr)
+    {
+        verify = version;
+    }
+    CATCH_REQUIRE(v->get_version() == verify);
     return v;
 }
 
 
 void invalid_version(char const * version, char const * errmsg)
 {
-    versiontheca::basic::pointer_t t(std::make_shared<versiontheca::basic>());
+    versiontheca::unicode::pointer_t t(std::make_shared<versiontheca::unicode>());
     versiontheca::versiontheca::pointer_t v(std::make_shared<versiontheca::versiontheca>(t, version));
+if(v->is_valid())
+{
+std::cerr << "--- testing invalid versions, but [" << version << "] is considered valid!\n";
+}
+
     CATCH_REQUIRE_FALSE(v->is_valid());
     CATCH_REQUIRE(v->get_last_error(false) == errmsg);
     CATCH_REQUIRE(v->get_last_error() == errmsg);
@@ -90,20 +104,51 @@ std::string generate_version(std::size_t max)
 }
 
 
+// a version of wctombs which encodes anything including invalid unicode
+// characters to make sure the library detects such as expected
+//
+std::string wctombs(char32_t wc)
+{
+    char mb[4];
+    if(wc < 0x80)
+    {
+        /* this will also encode '\0'... */
+        mb[0] = static_cast<char>(wc);
+        return std::string(mb, 1);
+    }
+    if(wc < 0x800)
+    {
+        mb[0] = static_cast<char>((wc >> 6) | 0xC0);
+        mb[1] = (wc & 0x3F) | 0x80;
+        return std::string(mb, 2);
+    }
+    if(wc < 0x10000)
+    {
+        mb[0] = static_cast<char>((wc >> 12) | 0xE0);
+        mb[1] = ((wc >> 6) & 0x3F) | 0x80;
+        mb[2] = (wc & 0x3F) | 0x80;
+        return std::string(mb, 3);
+    }
+    mb[0] = static_cast<char>((wc >> 18) | 0xF0);
+    mb[1] = ((wc >> 12) & 0x3F) | 0x80;
+    mb[2] = ((wc >> 6) & 0x3F) | 0x80;
+    mb[3] = (wc & 0x3F) | 0x80;
+    return std::string(mb, 4);
+}
 
 }
 // no name namespace
 
 
-CATCH_TEST_CASE("basic_versions", "[valid]")
+CATCH_TEST_CASE("unicode_versions", "[valid]")
 {
-    CATCH_START_SECTION("basic_versions: verify test checker for version 1.0")
+    CATCH_START_SECTION("unicode_versions: verify test checker for version 1.0")
     {
         create("1.0");
     }
     CATCH_END_SECTION()
 
-    CATCH_START_SECTION("basic_versions: verify that canonicalization happens")
+    CATCH_START_SECTION("unicode_versions: verify that canonicalization happens")
     {
         {
             versiontheca::versiontheca::pointer_t v(create("3", "3.0"));
@@ -126,10 +171,24 @@ CATCH_TEST_CASE("basic_versions", "[valid]")
             CATCH_REQUIRE(v->get_patch() == 0);
             CATCH_REQUIRE(v->get_build() == 0);
         }
+        {
+            versiontheca::versiontheca::pointer_t v(create("A.A.A", "A.A"));
+            CATCH_REQUIRE(v->get_major() == 0);
+            CATCH_REQUIRE(v->get_minor() == 0);
+            CATCH_REQUIRE(v->get_patch() == 0);
+            CATCH_REQUIRE(v->get_build() == 0);
+        }
+        {
+            versiontheca::versiontheca::pointer_t v(create("C.A.I"));
+            CATCH_REQUIRE(v->get_major() == 0);
+            CATCH_REQUIRE(v->get_minor() == 0);
+            CATCH_REQUIRE(v->get_patch() == 0);
+            CATCH_REQUIRE(v->get_build() == 0);
+        }
     }
     CATCH_END_SECTION()
 
-    CATCH_START_SECTION("basic_versions: many valid versions")
+    CATCH_START_SECTION("unicode_versions: many valid versions")
     {
         // many valid versions generated randomly to increase the likelyhood
         // of things I would otherwise not think of
@@ -153,9 +212,9 @@ CATCH_TEST_CASE("basic_versions", "[valid]")
 }
 
 
-CATCH_TEST_CASE("next_previous_basic_versions", "[valid][next][previous]")
+CATCH_TEST_CASE("next_previous_unicode_versions", "[valid][next][previous]")
 {
-    CATCH_START_SECTION("next_previous_basic_versions: next/previous at level 4, 3, 2, 1, 0")
+    CATCH_START_SECTION("next_previous_unicode_versions: next/previous at level 4, 3, 2, 1, 0")
     {
         {
             versiontheca::versiontheca::pointer_t a(create("1.3.2"));
@@ -225,9 +284,9 @@ CATCH_TEST_CASE("next_previous_basic_versions", "[valid][next][previous]")
 }
 
 
-CATCH_TEST_CASE("compare_basic_versions", "[valid][compare]")
+CATCH_TEST_CASE("compare_unicode_versions", "[valid][compare]")
 {
-    CATCH_START_SECTION("compare_basic_versions: compare many versions")
+    CATCH_START_SECTION("compare_unicode_versions: compare many versions")
     {
         versiontheca::versiontheca::pointer_t a(create("1.2"));
         versiontheca::versiontheca::pointer_t b(create("1.1"));
@@ -292,16 +351,16 @@ CATCH_TEST_CASE("compare_basic_versions", "[valid][compare]")
 }
 
 
-CATCH_TEST_CASE("invalid_basic_versions", "[invalid]")
+CATCH_TEST_CASE("invalid_unicode_versions", "[invalid]")
 {
-    CATCH_START_SECTION("invalid_basic_versions: empty")
+    CATCH_START_SECTION("invalid_unicode_versions: empty")
     {
         // empty
         //
         // note: the empty version is "invalid" as far as versions go,
         //       but it does not generetate an error message
         //
-        versiontheca::basic::pointer_t t(std::make_shared<versiontheca::basic>());
+        versiontheca::unicode::pointer_t t(std::make_shared<versiontheca::unicode>());
         versiontheca::versiontheca v(t, "");
         CATCH_REQUIRE_FALSE(v.is_valid());
         CATCH_REQUIRE(v.get_last_error().empty());
@@ -311,34 +370,82 @@ CATCH_TEST_CASE("invalid_basic_versions", "[invalid]")
     }
     CATCH_END_SECTION()
 
-    CATCH_START_SECTION("invalid_basic_versions: no support for ':' or '-' or '#' or '$'...")
+    CATCH_START_SECTION("invalid_unicode_versions: two periods, period at the start or end")
     {
-        invalid_version("3A3:1.2.3-pre55", "basic versions only support integers separated by periods (.).");
-        invalid_version("33:-55", "basic versions only support integers separated by periods (.).");
-        invalid_version(":", "basic versions only support integers separated by periods (.).");
-        invalid_version("a:", "basic versions only support integers separated by periods (.).");
-        invalid_version("-10:", "basic versions only support integers separated by periods (.).");
-        invalid_version("99999999999999999:", "integer too large for a valid version.");
-        invalid_version("3:", "basic versions only support integers separated by periods (.).");
-        invalid_version("-751", "basic versions only support integers separated by periods (.).");
-        invalid_version("-", "basic versions only support integers separated by periods (.).");
-        invalid_version("--", "basic versions only support integers separated by periods (.).");
-        invalid_version("+-", "basic versions only support integers separated by periods (.).");
-        invalid_version("#-", "basic versions only support integers separated by periods (.).");
-        invalid_version("55:435123-", "basic versions only support integers separated by periods (.).");
-        invalid_version("-a", "basic versions only support integers separated by periods (.).");
-        invalid_version("-0", "basic versions only support integers separated by periods (.).");
-        invalid_version("-+", "basic versions only support integers separated by periods (.).");
-        invalid_version("-3$7", "basic versions only support integers separated by periods (.).");
-        invalid_version("32:1.2.55-3:7", "basic versions only support integers separated by periods (.).");
-        invalid_version("-3.7", "basic versions only support integers separated by periods (.).");
-        invalid_version("3.7#", "basic versions only support integers separated by periods (.).");
-        invalid_version("3$7", "basic versions only support integers separated by periods (.).");
-        invalid_version("3;7", "basic versions only support integers separated by periods (.).");
+        // most characters are valid in Unicode versions
+        // we still have a few cases of invalid entry
+        //
+        invalid_version("3A3:1.2..3-pre55", "a version value cannot be an empty string.");
+        invalid_version(".33:-55", "a version value cannot be an empty string.");
+        invalid_version(":.", "a version value cannot be an empty string.");
     }
     CATCH_END_SECTION()
 
-    CATCH_START_SECTION("invalid_basic_versions: max + 1 fails")
+    CATCH_START_SECTION("invalid_unicode_versions: randomized")
+    {
+        // check all invalid unicode characters
+        //
+        for(char32_t c(1); c < 0x110000; ++c)
+        {
+            if(libutf8::is_valid_unicode(c, false))
+            {
+                // skip valid characters
+                //
+                continue;
+            }
+            std::size_t const max_parts(rand() % (versiontheca::MAX_PARTS - 1) + 1);
+            std::size_t bad_pos(rand() % (max_parts * 5));
+            std::string v;
+            std::size_t count(0);
+            if(count == bad_pos)
+            {
+                v += wctombs(c);
+            }
+            for(std::size_t part_no(0); part_no < max_parts; ++part_no)
+            {
+                if(part_no != 0)
+                {
+                    v += '.';
+                }
+                std::size_t const length(rand() % 10 + 1);
+                for(std::size_t l(0); l < length; ++l)
+                {
+                    char32_t wc(U'\0');
+                    do
+                    {
+                        wc = SNAP_CATCH2_NAMESPACE::random_char(SNAP_CATCH2_NAMESPACE::character_t::CHARACTER_UNICODE);
+                    }
+                    while(wc == '.' || wc < 0x20 || (wc >= 0x7F && wc <= 0x9F));
+                    v += libutf8::to_u8string(wc);
+                    ++count;
+                    if(count == bad_pos)
+                    {
+                        v += wctombs(c);
+                    }
+                }
+            }
+            if(bad_pos >= count)
+            {
+                v += wctombs(c);
+            }
+            std::stringstream last_error;
+            if(c >= 0xD800 && c <= 0xDFFF)
+            {
+                last_error << "input string includes an invalid code not representing a valid UTF-8 character.";
+            }
+            else
+            {
+                last_error << "found unexpected character: \\U"
+                           << std::hex << std::uppercase << std::setfill('0')
+                                       << std::setw(6) << static_cast<int>(c)
+                           << " in input.";
+            }
+            invalid_version(v.c_str(), last_error.str().c_str());
+        }
+    }
+    CATCH_END_SECTION()
+
+    CATCH_START_SECTION("invalid_unicode_versions: max + 1 fails")
     {
         versiontheca::versiontheca::pointer_t a(create("4294967295.4294967295.4294967295"));
         CATCH_REQUIRE(a->is_valid());
@@ -348,7 +455,7 @@ CATCH_TEST_CASE("invalid_basic_versions", "[invalid]")
     }
     CATCH_END_SECTION()
 
-    CATCH_START_SECTION("invalid_basic_versions: min - 1 fails")
+    CATCH_START_SECTION("invalid_unicode_versions: min - 1 fails")
     {
         versiontheca::versiontheca::pointer_t a(create("0.0"));
         CATCH_REQUIRE(a->is_valid());
@@ -360,11 +467,11 @@ CATCH_TEST_CASE("invalid_basic_versions", "[invalid]")
 }
 
 
-CATCH_TEST_CASE("bad_basic_calls", "[invalid]")
+CATCH_TEST_CASE("bad_unicode_calls", "[invalid]")
 {
-    CATCH_START_SECTION("bad_basic_calls: next without a version")
+    CATCH_START_SECTION("bad_unicode_calls: next without a version")
     {
-        versiontheca::basic::pointer_t t(std::make_shared<versiontheca::basic>());
+        versiontheca::unicode::pointer_t t(std::make_shared<versiontheca::unicode>());
         versiontheca::versiontheca v(t);
         CATCH_REQUIRE(v.next(0));
         CATCH_REQUIRE(v.get_last_error() == "");
@@ -372,16 +479,16 @@ CATCH_TEST_CASE("bad_basic_calls", "[invalid]")
     }
     CATCH_END_SECTION()
 
-    CATCH_START_SECTION("bad_basic_calls: previous without a version")
+    CATCH_START_SECTION("bad_unicode_calls: previous without a version")
     {
-        versiontheca::basic::pointer_t t(std::make_shared<versiontheca::basic>());
+        versiontheca::unicode::pointer_t t(std::make_shared<versiontheca::unicode>());
         versiontheca::versiontheca v(t);
         CATCH_REQUIRE_FALSE(v.previous(0));
         CATCH_REQUIRE(v.get_last_error() == "minimum limit reached; cannot decrement version any further.");
     }
     CATCH_END_SECTION()
 
-    CATCH_START_SECTION("bad_basic_calls: next out of bounds")
+    CATCH_START_SECTION("bad_unicode_calls: next out of bounds")
     {
         versiontheca::versiontheca::pointer_t a(create("1.5.3"));
         for(int p(-100); p < 0; ++p)
@@ -405,7 +512,7 @@ CATCH_TEST_CASE("bad_basic_calls", "[invalid]")
     }
     CATCH_END_SECTION()
 
-    CATCH_START_SECTION("bad_basic_calls: previous out of bounds")
+    CATCH_START_SECTION("bad_unicode_calls: previous out of bounds")
     {
         versiontheca::versiontheca::pointer_t a(create("1.5.3"));
         for(int p(-100); p < 0; ++p)
@@ -429,10 +536,10 @@ CATCH_TEST_CASE("bad_basic_calls", "[invalid]")
     }
     CATCH_END_SECTION()
 
-    CATCH_START_SECTION("bad_basic_calls: compare against an empty (invalid) version")
+    CATCH_START_SECTION("bad_unicode_calls: compare against an empty (invalid) version")
     {
         versiontheca::versiontheca::pointer_t a(create("1.2"));
-        versiontheca::basic::pointer_t t(std::make_shared<versiontheca::basic>());
+        versiontheca::unicode::pointer_t t(std::make_shared<versiontheca::unicode>());
         versiontheca::versiontheca empty(t, "");
 
         CATCH_REQUIRE(a->is_valid());
@@ -452,9 +559,9 @@ CATCH_TEST_CASE("bad_basic_calls", "[invalid]")
     }
     CATCH_END_SECTION()
 
-    CATCH_START_SECTION("bad_basic_calls: compare using an empty (invalid) version")
+    CATCH_START_SECTION("bad_unicode_calls: compare using an empty (invalid) version")
     {
-        versiontheca::basic::pointer_t t(std::make_shared<versiontheca::basic>());
+        versiontheca::unicode::pointer_t t(std::make_shared<versiontheca::unicode>());
         versiontheca::versiontheca empty(t, "");
         versiontheca::versiontheca::pointer_t b(create("5.3"));
 

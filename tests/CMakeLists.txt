@@ -31,6 +31,10 @@ if(SnapCatch2_FOUND)
 
         catch_basic.cpp
         catch_debian.cpp
+        catch_decimal.cpp
+        catch_part.cpp
+        catch_roman.cpp
+        catch_unicode.cpp
         catch_version.cpp
     )
     target_include_directories(${PROJECT_NAME}

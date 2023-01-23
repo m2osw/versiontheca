@@ -38,6 +38,8 @@
 // C++
 //
 #include    <cmath>
+#include    <iomanip>
+#include    <iostream>
 #include    <sstream>
 
 
@@ -83,8 +85,31 @@ bool decimal::is_valid_character(char32_t c) const
 
 std::string decimal::to_string() const
 {
+    // ignore all .0 at the end except for the minor version
+    // (i.e. "1.0" keep that zero)
+    //
+    if(empty())
+    {
+        f_last_error = "no parts to output.";
+        return std::string();
+    }
+
+
+    part_integer_t fraction(0);
+    int width(1);
+    if(size() == 2)
+    {
+        fraction = at(1).get_integer();
+        width = std::max(static_cast<std::uint8_t>(1), at(1).get_width());
+    }
+
     std::stringstream ss;
-    ss << get_decimal_version();
+    ss << at(0).get_integer()
+       << '.'
+       << std::setfill('0')
+       << std::setw(width)
+       << fraction;
+
     return ss.str();
 }
 
@@ -114,10 +139,14 @@ double decimal::get_decimal_version() const
         double version(at(0).get_integer());
         if(size() == 2)
         {
-            double const significant_zeroes(at(1).get_significant_zeroes());
+            double const width(at(1).get_width());
             double const fraction(at(1).get_integer());
-            double const digits(1 + static_cast<int>(log(fraction)) + significant_zeroes);
-            version += fraction * pow(10, -digits);
+            //double digits(1 + significant_zeroes);
+            //if(fraction > 0)
+            //{
+            //    digits += static_cast<int>(log(fraction));
+            //}
+            version += fraction * pow(10, -width);
         }
         return version;
     }

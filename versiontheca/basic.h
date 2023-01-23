@@ -18,12 +18,16 @@
 #pragma once
 
 /** \file
- * \brief Functions used to parse and compare debian versions.
+ * \brief Trait used to parse and compare basic versions.
  *
- * The library supports ways to specifically handle debian versions in C++.
+ * The library supports ways to specifically handle very basic versions in
+ * C++.
  *
- * This file describes the necessary functions to parse a version and then
- * compare two versions together.
+ * A basic versio is a version exclusively composed of numbers separated
+ * by period (.) characters. By default, the numbers are any value from
+ * 0 to 2^32-1 (4294967295). You can use the format to limit the values
+ * to a smaller number. Comparing versions against each other is done
+ * numerically only. A larger number represents a newer version.
  */
 
 // self

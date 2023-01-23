@@ -95,6 +95,7 @@ add_library(${PROJECT_NAME} SHARED
     debian.cpp
     decimal.cpp
     part.cpp
+    roman.cpp
     rpm.cpp
     trait.cpp
     version.cpp
@@ -144,6 +145,7 @@ install(
         part.h
         rpm.h
         trait.h
+        unicode.h
         versiontheca.h
 
     DESTINATION

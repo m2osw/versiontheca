@@ -18,12 +18,12 @@
 #pragma once
 
 /** \file
- * \brief Functions used to parse and compare Debian versions.
+ * \brief Trait used to parse and compare Debian versions.
  *
  * The library supports ways to specifically handle Debian versions in C++.
  *
- * This file describes the necessary functions to parse a version and then
- * compare two versions together.
+ * This file describes the necessary trait class used to parse a Debian
+ * version and then compare two versions together.
  */
 
 // self

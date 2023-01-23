@@ -43,7 +43,7 @@ public:
     typedef std::vector<part>       vector_t;
 
     void                set_separator(char32_t separator);
-    void                set_significant_zeroes(std::uint8_t significant_zeroes);
+    void                set_width(std::uint8_t width);
     void                set_type(char type);
 
     bool                set_value(std::string const & value);
@@ -56,7 +56,7 @@ public:
     bool                previous();
 
     char32_t            get_separator() const;
-    std::uint8_t        get_significant_zeroes() const;
+    std::uint8_t        get_width() const;
     char                get_type() const;
 
     bool                is_integer() const;
@@ -67,16 +67,10 @@ public:
 
     bool                is_zero() const;
     int                 compare(part const & rhs) const;    // change to <=> once available
-    bool                operator == (part const & rhs) const;
-    bool                operator != (part const & rhs) const;
-    bool                operator <  (part const & rhs) const;
-    bool                operator <= (part const & rhs) const;
-    bool                operator >  (part const & rhs) const;
-    bool                operator >= (part const & rhs) const;
 
 protected:
     char32_t            f_separator = NO_SEPARATOR;
-    std::uint8_t        f_significant_zeroes = 0;
+    std::uint8_t        f_width = 0;
     char                f_type = '\0';
     bool                f_is_integer = true;
     part_integer_t      f_integer = 0;

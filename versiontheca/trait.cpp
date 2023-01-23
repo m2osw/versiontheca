@@ -25,7 +25,9 @@
 
 // libutf8
 //
+#include    <libutf8/base.h>
 #include    <libutf8/iterator.h>
+#include    <libutf8/libutf8.h> // for the std::string += char32_t
 
 
 // snapdev
@@ -198,6 +200,11 @@ bool trait::parse_version(std::string const & v, char32_t sep)
     std::string value;
     for(char32_t c(*it); c != libutf8::EOS; ++it, c = *it)
     {
+        if(c == libutf8::NOT_A_CHARACTER)
+        {
+            f_last_error = "input string includes an invalid code not representing a valid UTF-8 character.";
+            return false;
+        }
         if(is_separator(c))
         {
             if(!parse_value(value, sep))
@@ -209,7 +216,7 @@ bool trait::parse_version(std::string const & v, char32_t sep)
         }
         else
         {
-            value += libutf8::to_u8string(c);
+            value += c;
         }
     }
     return parse_value(value, sep);
@@ -235,32 +242,19 @@ bool trait::parse_value(std::string const & value, char32_t sep)
         {
             // read one number (digits)
             //
-            std::uint8_t significant_zeroes(0);
-            while(c == '0')
-            {
-                ++significant_zeroes;
-                ++it;
-                c = *it;
-            }
             std::string n;
             for(; c >= '0' && c <= '9'; c = *++it)
             {
                 n += c;
             }
-            if(n.empty()
-            && significant_zeroes > 0)
-            {
-                --significant_zeroes;
-                n += '0';
-            }
             part p;
-            p.set_significant_zeroes(significant_zeroes);
-            p.set_separator(sep);
             if(!p.set_value(n))
             {
                 f_last_error = p.get_last_error();
                 return false;
             }
+            p.set_width(n.length());    // TODO: use format length when available
+            p.set_separator(sep);
             push_back(p);
             sep = '\0';
         }
@@ -271,6 +265,11 @@ bool trait::parse_value(std::string const & value, char32_t sep)
             std::string n;
             while(c != libutf8::EOS && (c < '0' || c > '9'))
             {
+                if(c == libutf8::NOT_A_CHARACTER)
+                {
+                    f_last_error = "input string includes an invalid code not representing a valid UTF-8 character.";
+                    return false;
+                }
                 if(!is_valid_character(c))
                 {
                     // trait can prevent any characters
@@ -280,7 +279,7 @@ bool trait::parse_value(std::string const & value, char32_t sep)
                         + " in input.";
                     return false;
                 }
-                n += libutf8::to_u8string(c);
+                n += c;
                 ++it;
                 c = *it;
             }
@@ -394,13 +393,21 @@ std::string trait::to_string() const
             {
                 throw logic_error("the very first part should not have a separator defined (it is not supported)."); // LCOV_EXCL_LINE
             }
-            result += libutf8::to_u8string(sep);
+            result += sep;
         }
         result += at(idx).to_string();
     }
     if(max == 1)
     {
-        result += ".0";
+        if(size() >= 2
+        && !at(1).is_integer())
+        {
+            result += ".A";
+        }
+        else
+        {
+            result += ".0";
+        }
     }
     return result;
 }
@@ -492,7 +499,7 @@ bool trait::next(int pos, pointer_t format)
     }
     for(;;)
     {
-        if(f_parts[pos] == get_format_part(format, pos, f_parts[pos].is_integer()))
+        if(f_parts[pos].compare(get_format_part(format, pos, f_parts[pos].is_integer())) == 0)
         {
             if(pos == 0)
             {
