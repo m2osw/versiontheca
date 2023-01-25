@@ -16,6 +16,8 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
+#define protected public
+
 // tested file
 //
 #include    "versiontheca/unicode.h"
@@ -65,7 +67,7 @@ versiontheca::versiontheca::pointer_t create(char const * version, char const * 
 }
 
 
-void invalid_version(char const * version, char const * errmsg)
+versiontheca::versiontheca::pointer_t invalid_version(char const * version, char const * errmsg)
 {
     versiontheca::unicode::pointer_t t(std::make_shared<versiontheca::unicode>());
     versiontheca::versiontheca::pointer_t v(std::make_shared<versiontheca::versiontheca>(t, version));
@@ -78,6 +80,8 @@ std::cerr << "--- testing invalid versions, but [" << version << "] is considere
     CATCH_REQUIRE(v->get_last_error(false) == errmsg);
     CATCH_REQUIRE(v->get_last_error() == errmsg);
     CATCH_REQUIRE(v->get_last_error().empty());
+
+    return v;
 }
 
 
@@ -279,6 +283,14 @@ CATCH_TEST_CASE("next_previous_unicode_versions", "[valid][next][previous]")
             CATCH_REQUIRE(a->next(0));
             CATCH_REQUIRE(a->get_version() == "1.0");
         }
+
+        {
+            versiontheca::versiontheca::pointer_t a(create("1.3"));
+            versiontheca::versiontheca::pointer_t f(create("9.9z"));
+            a->set_format(*f);
+            CATCH_REQUIRE(a->next(2));
+            CATCH_REQUIRE(a->get_version() == "1.3B");
+        }
     }
     CATCH_END_SECTION()
 }
@@ -291,6 +303,7 @@ CATCH_TEST_CASE("compare_unicode_versions", "[valid][compare]")
         versiontheca::versiontheca::pointer_t a(create("1.2"));
         versiontheca::versiontheca::pointer_t b(create("1.1"));
         versiontheca::versiontheca::pointer_t c(create("1.2.0.0", "1.2"));  // the zero are ignored by the compare
+        versiontheca::versiontheca::pointer_t d(create("1.2.5", "1.2.5"));
 
         CATCH_REQUIRE(a->is_valid());
         CATCH_REQUIRE(b->is_valid());
@@ -330,6 +343,20 @@ CATCH_TEST_CASE("compare_unicode_versions", "[valid][compare]")
         CATCH_REQUIRE(*c >= *a);
         CATCH_REQUIRE_FALSE(*c < *a);
         CATCH_REQUIRE(*c <= *a);
+
+        CATCH_REQUIRE_FALSE(*a == *d);
+        CATCH_REQUIRE(*a != *d);
+        CATCH_REQUIRE_FALSE(*a > *d);
+        CATCH_REQUIRE_FALSE(*a >= *d);
+        CATCH_REQUIRE(*a < *d);
+        CATCH_REQUIRE(*a <= *d);
+
+        CATCH_REQUIRE_FALSE(*d == *a);
+        CATCH_REQUIRE(*d != *a);
+        CATCH_REQUIRE(*d > *a);
+        CATCH_REQUIRE(*d >= *a);
+        CATCH_REQUIRE_FALSE(*d < *a);
+        CATCH_REQUIRE_FALSE(*d <= *a);
 
         {
             std::stringstream ss;
@@ -440,7 +467,13 @@ CATCH_TEST_CASE("invalid_unicode_versions", "[invalid]")
                                        << std::setw(6) << static_cast<int>(c)
                            << " in input.";
             }
-            invalid_version(v.c_str(), last_error.str().c_str());
+            versiontheca::versiontheca::pointer_t a(invalid_version(v.c_str(), last_error.str().c_str()));
+            if(max_parts < versiontheca::MAX_PARTS - 1)
+            {
+                // make sure the parse_value() function catches invalid Unicode
+                //
+                CATCH_REQUIRE_FALSE(a->get_trait()->parse_value(v, U'.'));
+            }
         }
     }
     CATCH_END_SECTION()
@@ -584,6 +617,44 @@ CATCH_TEST_CASE("bad_unicode_calls", "[invalid]")
             , versiontheca::empty_version
             , Catch::Matchers::ExceptionMessage(
                       "versiontheca_exception: one or both of the input versions are empty."));
+    }
+    CATCH_END_SECTION()
+
+    CATCH_START_SECTION("bad_unicode_calls: too many parts")
+    {
+        // up to MAX_PARTS, it works
+        //
+        std::string version("1");  // version "1" is a special case
+        create(version.c_str(), "1.0");
+        std::size_t idx(2);
+        for(; idx <= versiontheca::MAX_PARTS; ++idx)
+        {
+            version += '.';
+            version += std::to_string(idx);
+            create(version.c_str());
+        }
+
+        // when more than MAX_PARTS, it throws
+        //
+        for(; idx < versiontheca::MAX_PARTS + 100; ++idx)
+        {
+            version += '.';
+            version += std::to_string(idx);
+            CATCH_REQUIRE_THROWS_MATCHES(
+                  create(version.c_str())
+                , versiontheca::invalid_parameter
+                , Catch::Matchers::ExceptionMessage(
+                          "versiontheca_exception: trying to append more parts when maximum was already reached."));
+        }
+    }
+    CATCH_END_SECTION()
+
+    CATCH_START_SECTION("bad_unicode_calls: next/erase out of bounds")
+    {
+        versiontheca::unicode::pointer_t t(std::make_shared<versiontheca::unicode>());
+        CATCH_REQUIRE_FALSE(t->parse(std::string()));
+        CATCH_REQUIRE(t->get_last_error() == "an empty input string cannot represent a valid version.");
+        CATCH_REQUIRE(t->get_last_error().empty());
     }
     CATCH_END_SECTION()
 }

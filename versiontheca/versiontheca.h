@@ -53,7 +53,7 @@ public:
     versiontheca &      operator = (versiontheca const &) = delete;
 
     void                set_format(versiontheca const & format);
-    void                set_version(std::string const & v);
+    bool                set_version(std::string const & v);
     bool                next(int pos);
     bool                previous(int pos);
 

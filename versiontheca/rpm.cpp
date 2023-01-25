@@ -19,10 +19,10 @@
 /** \file
  * \brief Parse and compare RPM compatible versions.
  *
- * Debian versions are very well defined to support a limited set of
+ * RPM versions are very well defined to support a limited set of
  * characters which can be compared with well defined expected results.
- * The functions available here implement the Debian algorithm as defined
- * in the Debian manual. It includes all the features to the letter because
+ * The functions available here implement the RPM algorithm as defined
+ * in the RPM manual. It includes all the features to the letter because
  * we assume that fully supporting the version is of major importance.
  *
  * However, the colon (:) character is not supported in a filename under
@@ -69,7 +69,7 @@ namespace
 
 int compare_characters(char32_t a, char32_t b)
 {
-    // see order in debian_order.cpp
+    // see order in rpm_order.cpp
     //
     int const lidx(static_cast<int>(static_cast<std::uint8_t>(a)));
     int const ridx(static_cast<int>(static_cast<std::uint8_t>(b)));
@@ -77,11 +77,13 @@ int compare_characters(char32_t a, char32_t b)
     if(g_rpm_compare_characters[lidx] == 0
     || g_rpm_compare_characters[ridx] == 0)
     {
+        // LCOV_EXCL_START
         throw logic_error("index ("
             + std::to_string(lidx)
             + " and/or "
             + std::to_string(ridx)
             + ") in rpm/compare_characters() hit a 0, which means it represents an invalid character.");
+        // LCOV_EXCL_STOP
     }
 #endif
     int const r(g_rpm_compare_characters[lidx] - g_rpm_compare_characters[ridx]);
@@ -105,10 +107,14 @@ int compare_strings(std::string const & lhs, std::string const & rhs)
             if(lidx < lhs.length())
             {
                 a = lhs[lidx];
-                ++lidx;
             }
+            ++lidx;
         }
-        while(a == '_');
+        while(a == '_' && lidx < lhs.length());
+        if(a == '_')
+        {
+            a = '\0';
+        }
 
         char b('\0');
         do
@@ -116,10 +122,14 @@ int compare_strings(std::string const & lhs, std::string const & rhs)
             if(ridx < rhs.length())
             {
                 b = rhs[ridx];
-                ++ridx;
             }
+            ++ridx;
         }
-        while(b == '_');
+        while(b == '_' && ridx < rhs.length());
+        if(b == '_')
+        {
+            b = '\0';
+        }
 
         int const r(compare_characters(a, b));
         if(r != 0)
@@ -136,19 +146,19 @@ int compare_strings(std::string const & lhs, std::string const & rhs)
 // no name namespace
 
 
-/** \brief Parse a debian version string.
+/** \brief Parse an RPM version string.
  *
- * A debian version string is composed of three parts:
+ * A RPM version string is composed of three parts:
  *
  * * Epoch -- a number followed by a colon (:)
  * * Upstream Version -- numbers, letters, and . + - : ~
- * * Debian-revision -- additional parts after the last hyphen
+ * * RPM-revision -- additional parts after the last hyphen
  *
  * The upstream version may include : only if the version includes an
- * epoch. Similarly, it can include a dash if there is a Debian revision.
+ * epoch. Similarly, it can include a dash if there is an RPM revision.
  * To parse the version we first search the first colon (:) and parse
  * anything before that as the epoch. Then we search the last dash (-)
- * and parse that as the Debian revision. In between, the parse the
+ * and parse that as the RPM revision. In between, the parse the
  * rest as a standard version string that can include those two special
  * characters.
  *
@@ -168,7 +178,7 @@ bool rpm::parse(std::string const & v)
         // cannot appear in the epoch
         //
         f_last_error =
-              "invalid ':' and/or '-' in \""
+              "position of ':' and/or '-' is invalid in \""
             + v
             + "\".";
         return false;
@@ -213,7 +223,7 @@ bool rpm::parse(std::string const & v)
         // parse the revision
         //
         std::size_t idx(size());
-        if(!trait::parse_value(v.substr(dash + 1), U'-'))
+        if(!trait::parse_version(v.substr(dash + 1), U'-'))
         {
             return false;
         }
@@ -237,7 +247,8 @@ bool rpm::is_valid_character(char32_t c) const
         || (c >= U'A' && c <= U'Z')
         || (c >= U'a' && c <= U'z')
         || c == U'~'
-        || c == U'^';
+        || c == U'^'
+        || c == U'_';
 }
 
 
@@ -253,7 +264,7 @@ bool rpm::get_upstream_positions(std::size_t & start, std::size_t & end) const
     std::size_t const max(size());
     if(max == 0ULL)
     {
-        f_last_error = "no parts in this Debian version; cannot compute upstream start/end.";
+        f_last_error = "no parts in this RPM version; cannot compute upstream start/end.";
         return false;
     }
 
@@ -278,7 +289,7 @@ bool rpm::get_upstream_positions(std::size_t & start, std::size_t & end) const
     //
     if(static_cast<std::make_signed_t<std::size_t>>(end - start) <= 0)
     {
-        throw logic_error("no standard parts in this Debian version; cannot compute upstream start/end.");  // LCOV_EXCL_LINE
+        throw logic_error("no standard parts in this RPM version; cannot compute upstream start/end.");  // LCOV_EXCL_LINE
     }
 
     return true;
@@ -311,10 +322,21 @@ bool rpm::next(int pos, trait::pointer_t format)
     if(end <= static_cast<std::size_t>(pos))
     {
         part zero;
-        zero.set_separator(U'.');
+        part alpha;
         do
         {
-            insert(end, zero);
+            part const f(get_format_part(format, end, true));
+            if(f.is_integer())
+            {
+                zero.set_separator(f.get_separator());
+                insert(end, zero);
+            }
+            else
+            {
+                alpha.set_string(std::string(f.get_string().length(), 'A'));
+                alpha.set_separator(f.get_separator());
+                insert(end, alpha);
+            }
             ++end;
         }
         while(end <= static_cast<std::size_t>(pos));
@@ -386,9 +408,7 @@ bool rpm::previous(int pos, trait::pointer_t format)
     if(end <= static_cast<std::size_t>(pos))
     {
         part zero;
-        zero.set_separator(U'.');
         part alpha;
-        alpha.set_separator(U'.');
         do
         {
             part const f(get_format_part(format, end, true));
@@ -428,6 +448,7 @@ bool rpm::previous(int pos, trait::pointer_t format)
             {
                 at(pos).set_string(p.get_string());
             }
+            at(pos).set_separator(p.get_separator());
             --pos;
         }
         else
@@ -451,7 +472,6 @@ bool rpm::previous(int pos, trait::pointer_t format)
 
 std::string rpm::to_string() const
 {
-std::cerr << "--- RPM to_string...\n";
     if(empty())
     {
         f_last_error = "no parts to output.";
@@ -464,22 +484,26 @@ std::cerr << "--- RPM to_string...\n";
     get_upstream_positions(start, end);
 
     std::size_t max(end);
-    while(max > start && at(max - 1).is_zero())
+    while(max > start + 2 && at(max - 1).is_zero())
     {
         --max;
     }
     std::string result;
-    for(std::size_t idx(0); idx < max; ++idx)
+    char32_t sep(U'\0');
+    if(at(0).get_type() == ':'
+    && !at(0).is_zero())
     {
-        char const sep(at(idx).get_separator());
-        if(sep != '\0')
+        result += at(0).to_string();
+        sep = U':';
+    }
+    for(std::size_t idx(start); idx < max; ++idx)
+    {
+        if(idx != start)
         {
-#ifdef _DEBUG
-            if(idx == 0)
-            {
-                throw logic_error("the very first part should not have a separator defined (it is not supported)."); // LCOV_EXCL_LINE
-            }
-#endif
+            sep = at(idx).get_separator();
+        }
+        if(sep != U'\0')
+        {
             result += sep;
         }
         result += at(idx).to_string();
@@ -493,7 +517,7 @@ std::cerr << "--- RPM to_string...\n";
     //
     for(; end < size(); ++end)
     {
-        char const sep(at(end).get_separator());
+        sep = at(end).get_separator();
         if(sep != '\0')
         {
             result += sep;
@@ -502,60 +526,6 @@ std::cerr << "--- RPM to_string...\n";
     }
 
     return result;
-}
-
-
-bool rpm::is_epoch_required() const
-{
-    // any parts?
-    //
-    if(empty())
-    {
-        return false;
-    }
-
-    // is first part an epoch?
-    //
-    if(at(0).get_type() != ':')
-    {
-        return false;
-    }
-
-    // is epoch 0?
-    //
-    if(at(0).get_integer() != 0)
-    {
-        return true;
-    }
-
-    // when 0, we can skip on it only if the upstream version does not include
-    // a colon; otherwise it is required to distinguish the upstream colon
-    // from an epoch
-    //
-    std::size_t const max(size());
-    for(std::size_t idx(1); idx < max; ++idx)
-    {
-        if(at(idx).get_type() == '-')
-        {
-            // release version parts cannot include a ':' so no need to
-            // test that section
-            //
-            break;
-        }
-
-        if(!at(idx).is_integer())
-        {
-            std::string const s(at(idx).get_string());
-            if(s.find(':') != std::string::npos)
-            {
-                // it is required
-                //
-                return true;
-            }
-        }
-    }
-
-    return false;
 }
 
 
@@ -646,6 +616,15 @@ int rpm::compare(trait::pointer_t rhs) const
     {
         for(;;)
         {
+            if((lpos >= size() || at(lpos).get_type() != type)
+            && (rpos >= right->size() || right->at(rpos).get_type() != type))
+            {
+                // we reached a different type on both sides
+                // we need to explicitly break
+                //
+                break;
+            }
+
             int lint(0);
             int rint(0);
             bool linteger(false);
@@ -653,16 +632,8 @@ int rpm::compare(trait::pointer_t rhs) const
             std::string lstr;
             std::string rstr;
 
-            if(lpos >= size())
-            {
-                if(rpos >= right->size())
-                {
-                    // we've reached the end of both lists
-                    //
-                    break;
-                }
-            }
-            else if(at(lpos).get_type() == type)
+            if(lpos < size()
+            && at(lpos).get_type() == type)
             {
                 linteger = at(lpos).is_integer();
                 if(linteger)
@@ -717,11 +688,17 @@ int rpm::compare(trait::pointer_t rhs) const
             {
                 if(linteger)
                 {
-                    return 1;
+                    if(lint != 0 || !rstr.empty())
+                    {
+                        return 1;
+                    }
                 }
                 else
                 {
-                    return -1;
+                    if(rint != 0 || !lstr.empty())
+                    {
+                        return -1;
+                    }
                 }
             }
         }

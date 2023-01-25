@@ -202,19 +202,64 @@ CATCH_TEST_CASE("roman_versions", "[roman][valid]")
         //
         create("I.IL", "I.XLIX");
         create("I.IC", "I.XCIX");
-        create("I.VC", "I.XCV");
+        create("I.vc", "I.XCV");
         create("I.ID", "I.CDXCIX");
-        create("I.VD", "I.CDXCV");
+        create("i.vd", "I.CDXCV");
         create("I.IM", "I.CMXCIX");
+        create("IIII.A", "IV.A");
 
         // the following lot is really just circumstancial
         //
         create("I.LC", "I.L");
-        create("I.LLCI", "I.I");
+        create("i.llci", "I.I");
+    }
+    CATCH_END_SECTION()
+
+    CATCH_START_SECTION("roman_versions: including other things")
+    {
+        versiontheca::versiontheca::pointer_t a(create("3.L.rc5", "3.L.rc5"));
+        versiontheca::versiontheca::pointer_t b(create("3.XI.rc6", "3.XI.rc6"));
+
+        CATCH_REQUIRE(*a > *b); // 50 > 11
     }
     CATCH_END_SECTION()
 }
 
 
+CATCH_TEST_CASE("roman_invalid", "[roman][invalid]")
+{
+    CATCH_START_SECTION("roman_invalid: verify test checker for version 1.0 and i.0 and I.0")
+    {
+        versiontheca::roman::pointer_t t(std::make_shared<versiontheca::roman>());
+        versiontheca::versiontheca::pointer_t v(std::make_shared<versiontheca::versiontheca>(t, ""));
+        CATCH_REQUIRE(v->get_last_error().empty());
+        CATCH_REQUIRE(v->get_version().empty());
+        CATCH_REQUIRE(v->get_last_error() == "no parts to output.");
+        CATCH_REQUIRE(v->get_last_error().empty());
+    }
+    CATCH_END_SECTION()
+
+    CATCH_START_SECTION("roman_invalid: two periods one after the other is not valid")
+    {
+        versiontheca::roman::pointer_t t(std::make_shared<versiontheca::roman>());
+        versiontheca::versiontheca::pointer_t v(std::make_shared<versiontheca::versiontheca>(t, ""));
+        CATCH_REQUIRE_FALSE(v->set_version("1..2"));
+        CATCH_REQUIRE(v->get_last_error() == "a version value cannot be an empty string.");
+        CATCH_REQUIRE(v->get_last_error().empty());
+    }
+    CATCH_END_SECTION()
+
+    CATCH_START_SECTION("roman_invalid: invalid roman numbers")
+    {
+        CATCH_REQUIRE(versiontheca::to_roman_number(0).empty());
+        for(int n(4000); n <= 5000; ++n)
+        {
+            CATCH_REQUIRE(versiontheca::to_roman_number(n).empty());
+        }
+
+        CATCH_REQUIRE(versiontheca::from_roman_number("") == 0);
+    }
+    CATCH_END_SECTION()
+}
 
 // vim: ts=4 sw=4 et

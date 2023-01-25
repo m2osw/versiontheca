@@ -129,6 +129,7 @@ void usage()
            "  -F | --decimal       read versions as decimal numbers\n"
            "  -h | --help          print out this help screen\n"
            "  -l | --limit <N>     compare the first N parts\n"
+           "       --maximum-parts print out the MAX_PARTS parameter\n"
            "  -n | --next <N>      compute next versions\n"
            "  -p | --previous <N>  compute previous versions\n"
            "  -R | --roman         read versions as Unicode allowing roman numerals\n"
@@ -573,6 +574,11 @@ int main(int argc, char * argv[])
             {
                 set_version_type(version_type_t::VERSION_TYPE_BASIC);
                 continue;
+            }
+            if(strcmp(argv[i], "--maximum-parts") == 0)
+            {
+                std::cout << versiontheca::MAX_PARTS << "\n";
+                return 0;
             }
         }
         else

@@ -469,9 +469,6 @@ bool debian::previous(int pos, trait::pointer_t format)
 
 std::string debian::to_string() const
 {
-    // ignore all .0 at the end except for the minor version
-    // (i.e. "1.0" keep that zero)
-    //
     if(empty())
     {
         f_last_error = "no parts to output.";
@@ -503,7 +500,7 @@ std::string debian::to_string() const
         }
         if(sep != U'\0')
         {
-            result += libutf8::to_u8string(sep);
+            result += sep;
         }
         result += at(idx).to_string();
     }
@@ -519,7 +516,7 @@ std::string debian::to_string() const
         sep = at(end).get_separator();
         if(sep != '\0')
         {
-            result += libutf8::to_u8string(sep);
+            result += sep;
         }
         result += at(end).to_string();
     }
@@ -623,7 +620,7 @@ bool debian::is_epoch_required() const
  */
 int debian::compare(trait::pointer_t rhs) const
 {
-    if(empty() || rhs->empty())
+    if(empty() || rhs == nullptr || rhs->empty())
     {
         throw empty_version("one or both of the input versions are empty.");
     }

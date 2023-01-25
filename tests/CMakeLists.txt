@@ -34,6 +34,7 @@ if(SnapCatch2_FOUND)
         catch_decimal.cpp
         catch_part.cpp
         catch_roman.cpp
+        catch_rpm.cpp
         catch_unicode.cpp
         catch_version.cpp
     )

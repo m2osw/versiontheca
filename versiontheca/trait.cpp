@@ -129,7 +129,7 @@ void trait::resize(std::size_t sz)
 {
     if(sz > MAX_PARTS)
     {
-        throw invalid_parameter("requested too many parts");
+        throw invalid_parameter("requested too many parts.");
     }
 
     f_parts.resize(sz);

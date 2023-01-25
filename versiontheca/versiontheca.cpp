@@ -69,13 +69,14 @@ void versiontheca::set_format(versiontheca const & format)
 }
 
 
-void versiontheca::set_version(std::string const & v)
+bool versiontheca::set_version(std::string const & v)
 {
     f_valid = f_trait->parse(v);
     if(!f_valid)
     {
         f_trait->clear();
     }
+    return f_valid;
 }
 
 
