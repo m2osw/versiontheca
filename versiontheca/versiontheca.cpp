@@ -16,6 +16,45 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
+/** \file The main class of versiontheca is implemented here.
+ *
+ * You are expected to create a versiontheca using a trait. This file
+ * includes the implementation calling the necessary functions on the
+ * trait depending on what you need to do with the version data.
+ */
+
+/** \mainpage
+ * \brief The versiontheca library is used to \em compile versions of various
+ * types in a list of parts.
+ *
+ * The library supports traits, which are various implementations of the
+ * version parser. The default is the Unicode trait. This version parser
+ * supports pretty much all the Unicode characters. The period is viewed
+ * as a part separator and like most of the other parsers, it views strings
+ * of digits as number, opposed to a string, which is important for sorting
+ * versions in an ascending order.
+ *
+ * All the traits are:
+ *
+ * \li Basic -- allow for numbers separated by periods (.) only
+ * \li Debian -- allow for Debian like versions to be parsed (Debian, Ubuntu)
+ * \li Decimal -- a basic version with just two numbers, so it can be converted
+ * to a floating point number
+ * \li roman -- allow for roman numerals to appear in a part
+ * \li RPM -- allow RPM like versions to be parsed (Fedora, RedHat)
+ * \li Unicode -- allow any character in your version, numbers are still viewed
+ * as such and ordered as numbers, not strings
+ *
+ * \note
+ * The implementation for the Debian and RPM version traits do not match
+ * the corresponding distribution implementations. However, for most
+ * common versions, it should work as expected. Only a very few packages
+ * temporarily use versions that may fail.
+ *
+ * At this time, the source code and support is found on Github.com:
+ * https://github.com/m2osw/versiontheca
+ */
+
 // self
 //
 #include    <versiontheca/versiontheca.h>
