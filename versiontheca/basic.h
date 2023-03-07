@@ -23,7 +23,7 @@
  * The library supports ways to specifically handle very basic versions in
  * C++.
  *
- * A basic versio is a version exclusively composed of numbers separated
+ * A basic version is a version exclusively composed of numbers separated
  * by period (.) characters. By default, the numbers are any value from
  * 0 to 2^32-1 (4294967295). You can use the format to limit the values
  * to a smaller number. Comparing versions against each other is done

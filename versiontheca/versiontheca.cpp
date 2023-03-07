@@ -161,6 +161,21 @@ std::string versiontheca::get_version() const
 }
 
 
+void versiontheca::set_major(part_integer_t value)
+{
+    part p;
+    p.set_integer(value);
+    if(f_trait->size() >= 1)
+    {
+        f_trait->at(0) = p;
+    }
+    else
+    {
+        f_trait->push_back(p);
+    }
+}
+
+
 part_integer_t versiontheca::get_major() const
 {
     if(f_trait->empty())
@@ -173,6 +188,26 @@ part_integer_t versiontheca::get_major() const
         return 0;
     }
     return p.get_integer();
+}
+
+
+void versiontheca::set_minor(part_integer_t value)
+{
+    part p;
+    p.set_integer(value);
+    if(f_trait->size() >= 2)
+    {
+        f_trait->at(1) = p;
+    }
+    else
+    {
+        if(f_trait->size() == 0)
+        {
+            part z;
+            f_trait->push_back(z);
+        }
+        f_trait->push_back(p);
+    }
 }
 
 
@@ -191,6 +226,26 @@ part_integer_t versiontheca::get_minor() const
 }
 
 
+void versiontheca::set_patch(part_integer_t value)
+{
+    part p;
+    p.set_integer(value);
+    if(f_trait->size() >= 3)
+    {
+        f_trait->at(2) = p;
+    }
+    else
+    {
+        while(f_trait->size() < 2)
+        {
+            part z;
+            f_trait->push_back(z);
+        }
+        f_trait->push_back(p);
+    }
+}
+
+
 part_integer_t versiontheca::get_patch() const
 {
     if(f_trait->size() < 3)
@@ -203,6 +258,26 @@ part_integer_t versiontheca::get_patch() const
         return 0;
     }
     return p.get_integer();
+}
+
+
+void versiontheca::set_build(part_integer_t value)
+{
+    part p;
+    p.set_integer(value);
+    if(f_trait->size() >= 4)
+    {
+        f_trait->at(3) = p;
+    }
+    else
+    {
+        while(f_trait->size() < 3)
+        {
+            part z;
+            f_trait->push_back(z);
+        }
+        f_trait->push_back(p);
+    }
 }
 
 

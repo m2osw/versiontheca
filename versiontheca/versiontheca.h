@@ -60,9 +60,13 @@ public:
     bool                is_valid() const;
     std::size_t         size() const;
     std::string         get_version() const;
+    void                set_major(part_integer_t value);
     part_integer_t      get_major() const;
+    void                set_minor(part_integer_t value);
     part_integer_t      get_minor() const;
+    void                set_patch(part_integer_t value);
     part_integer_t      get_patch() const;
+    void                set_build(part_integer_t value);
     part_integer_t      get_build() const;
     std::string         get_last_error(bool clear = true) const;
     trait::pointer_t    get_trait() const;

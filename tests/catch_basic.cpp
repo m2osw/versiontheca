@@ -111,6 +111,29 @@ CATCH_TEST_CASE("basic_versions", "[valid]")
             CATCH_REQUIRE(v->get_minor() == 0);
             CATCH_REQUIRE(v->get_patch() == 0);
             CATCH_REQUIRE(v->get_build() == 0);
+
+            for(int count(0); count < 100; ++count)
+            {
+                versiontheca::part_integer_t const major_value(rand());
+                v->set_major(major_value);
+                CATCH_REQUIRE(v->get_major() == major_value);
+
+                versiontheca::part_integer_t const minor_value(rand());
+                v->set_minor(minor_value);
+                CATCH_REQUIRE(v->get_minor() == minor_value);
+
+                versiontheca::part_integer_t const patch_value(rand());
+                v->set_patch(patch_value);
+                CATCH_REQUIRE(v->get_patch() == patch_value);
+
+                versiontheca::part_integer_t const build_value(rand());
+                v->set_build(build_value);
+                CATCH_REQUIRE(v->get_build() == build_value);
+
+                CATCH_REQUIRE(v->get_major() == major_value);
+                CATCH_REQUIRE(v->get_minor() == minor_value);
+                CATCH_REQUIRE(v->get_patch() == patch_value);
+            }
         }
         {
             versiontheca::versiontheca::pointer_t v(create("1.0.0", "1.0"));
@@ -125,6 +148,39 @@ CATCH_TEST_CASE("basic_versions", "[valid]")
             CATCH_REQUIRE(v->get_minor() == 0);
             CATCH_REQUIRE(v->get_patch() == 0);
             CATCH_REQUIRE(v->get_build() == 0);
+        }
+    }
+    CATCH_END_SECTION()
+
+    CATCH_START_SECTION("basic_versions: verify the set functions")
+    {
+        versiontheca::versiontheca::pointer_t v(create("7", "7.0"));
+        CATCH_REQUIRE(v->get_major() == 7);
+        CATCH_REQUIRE(v->get_minor() == 0);
+        CATCH_REQUIRE(v->get_patch() == 0);
+        CATCH_REQUIRE(v->get_build() == 0);
+
+        for(int count(0); count < 100; ++count)
+        {
+            versiontheca::part_integer_t const major_value(rand());
+            v->set_major(major_value);
+            CATCH_REQUIRE(v->get_major() == major_value);
+
+            versiontheca::part_integer_t const minor_value(rand());
+            v->set_minor(minor_value);
+            CATCH_REQUIRE(v->get_minor() == minor_value);
+
+            versiontheca::part_integer_t const patch_value(rand());
+            v->set_patch(patch_value);
+            CATCH_REQUIRE(v->get_patch() == patch_value);
+
+            versiontheca::part_integer_t const build_value(rand());
+            v->set_build(build_value);
+            CATCH_REQUIRE(v->get_build() == build_value);
+
+            CATCH_REQUIRE(v->get_major() == major_value);
+            CATCH_REQUIRE(v->get_minor() == minor_value);
+            CATCH_REQUIRE(v->get_patch() == patch_value);
         }
     }
     CATCH_END_SECTION()
