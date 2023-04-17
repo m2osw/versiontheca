@@ -47,6 +47,7 @@
 // C++
 //
 #include    <iostream>
+#include    <limits>
 
 
 // last include
