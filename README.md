@@ -235,6 +235,19 @@ it is expected to be defined as the last possible value (the first is always
 have a format that looks like this: `"9999.9999z"` (the maximum numbers
 could be much larger, we support a full 32 bits unsigned number).
 
+# Compare Versions at Compiler Time
+
+If you need to compare versions at compile time, such as the GCC compiler
+version or the version of a library you include, then you can make use of
+the `SNAPDEV_CHECK_VERSION()` and `SNAPDEV_CHECK_GCC_VERSION()` macros
+found in the `snapdev/version.h` header. Those macros compare the first
+three version number (you can set the patch number to 0 if you do not
+want to test it).
+
+The versiontheca library does not offer additional macros since those
+two are already quite useful. (TODO: add a `VERSIONTHECA_CHECK_VERSION()`
+macro).
+
 # Where does the name come from?
 
 The suffix -theca comes from Latin and Greek. It means _library_, _gallery_,
