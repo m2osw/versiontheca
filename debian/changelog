@@ -1,3 +1,9 @@
+versiontheca (1.0.0.1~bionic) bionic; urgency=high
+
+  * Bumped build version to rebuild on Launchpad.
+
+ -- Alexis Wilke <alexis@m2osw.com>  Tue, 07 Nov 2023 08:54:51 -0800
+
 versiontheca (1.0.0.0~jammy) jammy; urgency=high
 
   * First version of versiontheca.
