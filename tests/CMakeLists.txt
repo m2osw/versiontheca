@@ -47,20 +47,19 @@ if(SnapCatch2_FOUND)
         ${SNAPCATCH2_LIBRARIES}
     )
 
-
-    ##
-    ## Run all the tests
-    ##
-    project(run_versiontheca_tests)
-    add_custom_target(run_versiontheca_tests
-        COMMAND echo "*** run_versiontheca_tests ***"
-        COMMAND unittest
-        DEPENDS unittest
-    )
-
 else(SnapCatch2_FOUND)
 
     message("SnapCatch2 not found... no tests will be built.")
+
+endif(SnapCatch2_FOUND)
+
+if(SnapCatch2_FOUND)
+
+    find_package(SnapTestRunner)
+    AddUnitTestsTarget(
+        PROJECT_NAME
+            rununittests
+    )
 
 endif(SnapCatch2_FOUND)
 
