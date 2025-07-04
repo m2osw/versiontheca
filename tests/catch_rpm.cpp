@@ -910,10 +910,10 @@ CATCH_TEST_CASE("invalid_rpm_versions", "[invalid]")
                     has_release = true;
                 }
                 if(!v.empty()
-                && v.back() == '.'
+                && (v.back() == '-' || v.back() == '.')
                 && (vc == '-' || vc == '.'))
                 {
-                    v += 'N'; // add a nugget between '.' and '-'/'.'
+                    v += 'N'; // add a nugget between -., --, .., or .-
                 }
                 v += vc;
             }
@@ -936,6 +936,7 @@ CATCH_TEST_CASE("invalid_rpm_versions", "[invalid]")
                     {
                         // avoid invalid (empty) revisions because that's not
                         // the purpose of this test
+                        //
                         std::stringstream ss;
                         ss << rand() % 10;
                         v += ss.str();
@@ -943,6 +944,7 @@ CATCH_TEST_CASE("invalid_rpm_versions", "[invalid]")
                     if(p < bad_at)
                     {
                         // bad character ended up in the revision
+                        //
                         check_version(v.c_str(), last_error.str());
                     }
                     else
@@ -956,6 +958,7 @@ CATCH_TEST_CASE("invalid_rpm_versions", "[invalid]")
                             // a revision does not accept a ':' character and since
                             // it is checked before the version we get that error
                             // instead instead of the version error...
+                            //
                             check_version(v.c_str(), last_error.str());
                         }
                     }
