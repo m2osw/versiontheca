@@ -913,7 +913,7 @@ CATCH_TEST_CASE("invalid_rpm_versions", "[invalid]")
                 && (v.back() == '-' || v.back() == '.' || v.back() == ':')
                 && (vc == '-' || vc == '.' || vc == ':'))
                 {
-                    v += 'N'; // add a nugget between -., --, .., or .-
+                    v += 'N'; // add a nugget between -., --, .., .-, :., :-, -:, .:, ::
                 }
                 v += vc;
             }
