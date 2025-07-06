@@ -910,8 +910,8 @@ CATCH_TEST_CASE("invalid_rpm_versions", "[invalid]")
                     has_release = true;
                 }
                 if(!v.empty()
-                && (v.back() == '-' || v.back() == '.')
-                && (vc == '-' || vc == '.'))
+                && (v.back() == '-' || v.back() == '.' || v.back() == ':')
+                && (vc == '-' || vc == '.' || vc == ':'))
                 {
                     v += 'N'; // add a nugget between -., --, .., or .-
                 }
