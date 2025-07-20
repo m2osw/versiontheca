@@ -1,3 +1,9 @@
+versiontheca (1.0.1.0~bionic) bionic; urgency=high
+
+  * Several fixes to "empty strings" tests (-. .- :: :. :-, etc.)
+
+ -- Alexis Wilke <alexis@m2osw.com>  Sun, 20 Jul 2025 15:38:00 -0700
+
 versiontheca (1.0.0.2~bionic) bionic; urgency=high
 
   * Bumped build version to rebuild on Launchpad.
