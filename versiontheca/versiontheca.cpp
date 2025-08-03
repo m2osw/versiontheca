@@ -16,7 +16,8 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-/** \file The main class of versiontheca is implemented here.
+/** \file
+ * \brief The main class of versiontheca is implemented here.
  *
  * You are expected to create a versiontheca using a trait. This file
  * includes the implementation calling the necessary functions on the
