@@ -1,4 +1,4 @@
-# Copyright (c) 2023  Made to Order Software Corp.  All Rights Reserved
+# Copyright (c) 2023-2025  Made to Order Software Corp.  All Rights Reserved
 #
 # http://snapwebsites.org/project/versiontheca
 # contact@m2osw.com
