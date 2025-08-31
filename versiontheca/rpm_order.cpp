@@ -33,8 +33,6 @@
  * The `-` defines a release and is never compared (it cannot otherwise appear
  * in the version strings).
  *
- * The `:` defines an epoch. It cannot appear anywhere else.
- *
  * The `.` is viewed as a separator in our system so it never gets compared.
  * Because of that, it is not necessary in our table.
  *

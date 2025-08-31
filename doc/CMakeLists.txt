@@ -20,8 +20,11 @@
 ##
 ## Documentation
 ##
+project(versiontheca-documentation)
+
 find_package(SnapDoxygen)
-AddDoxygenTarget(versiontheca
+AddDoxygenTarget(
+    versiontheca
     ${VERSIONTHECA_VERSION_MAJOR}
     ${VERSIONTHECA_VERSION_MINOR}
     ${VERSIONTHECA_VERSION_PATCH}
