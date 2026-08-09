@@ -1,3 +1,9 @@
+versiontheca (1.0.2.0~noble) noble; urgency=high
+
+  * Made further fixes to the documentation.
+
+ -- Alexis Wilke <alexis@m2osw.com>  Sun, 09 Aug 2026 13:01:19 -0700
+
 versiontheca (1.0.1.0~noble) noble; urgency=high
 
   * Several fixes to "empty strings" tests (-. .- :: :. :-, etc.)
