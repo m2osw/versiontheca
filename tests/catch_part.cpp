@@ -46,7 +46,7 @@ namespace
 {
 
 
-bool is_number(std::string value)
+bool is_number(std::string const & value)
 {
     for(auto const c : value)
     {
