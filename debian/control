@@ -19,9 +19,9 @@ Package: versiontheca-dev
 Section: utils
 Architecture: any
 Depends: versiontheca (= ${binary:Version}), ${misc:Depends}
-Recommends: versiontheca-doc (= ${binary:Version})
+Suggests: versiontheca-doc (= ${binary:Version})
 Description: C++ library & tool to handle any type of version string.
- This package parses version strings and gives you the dissecated elements.
+ This package parses version strings and gives you the dissected elements.
  .
  This is the development package complete with C++ headers.
 
@@ -29,18 +29,16 @@ Package: versiontheca-doc
 Section: doc
 Architecture: all
 Depends: ${misc:Depends}
-Recommends: versiontheca (= ${binary:Version})
 Description: C++ library & tool to handle any type of version string.
- This package parses version strings and gives you the dissecated elements.
+ This package parses version strings and gives you the dissected elements.
  .
  This is the documentation package about the library and tool.
 
 Package: versiontheca
 Section: web
 Architecture: any
-Suggests: versiontheca-doc (= ${binary:Version})
 Description: C++ library & tool to handle any type of version string.
- This package parses version strings and gives you the dissecated elements.
+ This package parses version strings and gives you the dissected elements.
  .
  This is the package with the compiled library and tool.
 
